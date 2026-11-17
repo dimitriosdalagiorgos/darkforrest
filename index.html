@@ -169,7 +169,7 @@ body.console{overflow:auto;user-select:auto}
 <div id="setup">
   <div class="box">
     <h1>ΣΚΟΤΕΙΝΟ ΔΑΣΟΣ</h1>
-    <div class="sub">Ένας σκοτεινός γαλαξίας. Κάθε νησίδα είναι ένας πολιτισμός με μια κρυφή ψυχή. Θα μιλήσετε στους άλλους; Θα κρυφτείτε; Θα αλλάξετε τους νόμους της φύσης; Κάθε λύση είναι και μια φυλακή.</div>
+    <div class="sub">Ένας σκοτεινός γαλαξίας. Κάθε νησίδα είναι ένας πολιτισμός με ένα κρυφό δόγμα. Θα μιλήσετε στους άλλους; Θα κρυφτείτε; Θα αλλάξετε τους νόμους της φύσης; Κάθε λύση είναι και μια φυλακή.</div>
 
     <div class="line">Πολιτισμοί:
       <select id="nCivs"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select>
@@ -180,7 +180,7 @@ body.console{overflow:auto;user-select:auto}
 
     <div class="card" style="border:2px solid var(--sci)">
       <b style="font-size:20px">Βήμα 1 · Τα tablet των νησίδων</b>
-      <p style="margin:.5em 0 0">Πατήστε το κουμπί και κάθε νησίδα σκανάρει τον κωδικό με <b>το δικό της tablet</b>. Στο tablet διαλέγει ποιος πολιτισμός είναι και του δίνει όνομα. Από εκεί κρύβεται, μαθαίνει την κρυφή ψυχή της και παίζει.</p>
+      <p style="margin:.5em 0 0">Πατήστε το κουμπί και κάθε νησίδα σκανάρει τον κωδικό με <b>το δικό της tablet</b>. Στο tablet διαλέγει ποιος πολιτισμός είναι και του δίνει όνομα. Από εκεί κρύβεται, μαθαίνει το κρυφό δόγμα της και παίζει.</p>
       <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button id="btnTablets" class="primary">Δείξε το QR για τα tablet</button><span id="tabState"></span>
       </div>
@@ -272,7 +272,7 @@ const TIERS = [3,6,9];          // σκαλοπάτια Τεχνολογίας �
 const STRIKE_COST = 2;
 const BUBBLE_STEP = 170;        // πόσο μεγαλώνει η φούσκα Higgs σε κάθε γύρο (μονάδες χάρτη)
 
-// ---------- κρυφές ψυχές ----------
+// ---------- κρυφά δόγματα ----------
 const SOULS = [
   {id:'hidden', n:'Οι Κρυμμένοι', g:'Κανείς να μη μάθει ποτέ πού είστε.', b:'+6 στο τέλος, αν δεν φανερωθήκατε ποτέ.', score:c=>c.everKnown?0:6},
   {id:'peace',  n:'Οι Ειρηνιστές', g:'Μιλήστε με άλλους πολιτισμούς.', b:'+3 στο τέλος για κάθε επαφή.', score:c=>3*c.contacts},
@@ -621,13 +621,13 @@ async function endGame(){
   renderAll();
   for(const r of res.slice().reverse()){
     const c=S.civs[r.i], s=soul(c);
-    await info(`${esc(c.name)}: ${esc(s.n)}`,`<p style="color:var(--muted)">Η κρυφή ψυχή τους: ${esc(s.g)} ${esc(s.b)}</p>
-      <p>Τεχνολογία <b>${r.T}</b> + ψυχή <b>${r.bonus}</b> = <b style="font-size:30px;color:${c.color}">${r.tot}</b></p>`);
+    await info(`${esc(c.name)}: ${esc(s.n)}`,`<p style="color:var(--muted)">Το κρυφό δόγμα τους: ${esc(s.g)} ${esc(s.b)}</p>
+      <p>Τεχνολογία <b>${r.T}</b> + δόγμα <b>${r.bonus}</b> = <b style="font-size:30px;color:${c.color}">${r.tot}</b></p>`);
   }
   log(`Ο γαλαξίας σωπαίνει. Πρώτοι οι ${S.civs[res[0].i].name} (${soul(S.civs[res[0].i]).n}) με ${res[0].tot}.`);
   renderAll();
   await info('Ο γαλαξίας σωπαίνει', `<p>${res.map((r,k)=>`${k+1}. <b style="color:${S.civs[r.i].color}">${esc(S.civs[r.i].name)}</b> · ${esc(soul(S.civs[r.i]).n)}: ${r.tot}`).join('<br>')}</p>
-    <p style="color:var(--muted)">Ποια ψυχή ανταμείβει αυτό το σύμπαν; Ποιος νόμος έγινε φυλακή; Κι αν άλλαζε ένας νόμος;</p>`);
+    <p style="color:var(--muted)">Ποιο δόγμα ανταμείβει αυτό το σύμπαν; Ποιος νόμος έγινε φυλακή; Κι αν άλλαζε ένας νόμος;</p>`);
 }
 
 /* ---------- κινήσεις ----------
@@ -776,13 +776,13 @@ function showRules(){
 $('#rulesBack').onclick=()=>$('#rules').classList.add('hidden');
 function howTo(){
   info('Οι κανόνες',`
-  <p><b>Αρχή:</b> κάθε πολιτισμός κρύβεται σε ένα αστέρι (2-12) και παίρνει μια <b>κρυφή ψυχή</b>, δηλαδή έναν στόχο που δίνει πόντους στο τέλος (Κρυμμένοι, Ειρηνιστές, Κυνηγοί, Ερευνητές, Επιζώντες, Αρχιτέκτονες).</p>
+  <p><b>Αρχή:</b> κάθε πολιτισμός κρύβεται σε ένα αστέρι (2-12) και παίρνει ένα <b>κρυφό δόγμα</b>: τι πιστεύει για το σύμπαν και τι θέλει, δηλαδή έναν στόχο που δίνει πόντους στο τέλος (Κρυμμένοι, Ειρηνιστές, Κυνηγοί, Ερευνητές, Επιζώντες, Αρχιτέκτονες).</p>
   <p><b>Σε κάθε γύρο</b> κάθε πολιτισμός κάνει μία κίνηση:<br>
   • <b>Σιωπή:</b> +1 Τεχνολογία. Κανείς δεν σας βλέπει.<br>
   • <b>Σήμα:</b> +1 Τεχνολογία και φανερώνεστε. Αν στείλει σήμα κι άλλος στον ίδιο γύρο, γίνεται <b>επαφή</b>: +3 ο καθένας, και μαθαίνετε ο ένας πού είναι ο άλλος.<br>
   • <b>Χτύπημα:</b> κοστίζει ${STRIKE_COST} Τεχνολογία. Ό,τι ζει στο αστέρι σβήνει. Ζάρι: με 1-3 το ίχνος σας φανερώνει.<br>
   • <b>Νόμος της φύσης:</b> στα 3, 6 και 9 Τεχνολογίας ξεκλειδώνετε έναν νόμο. Κάθε νόμος είναι δύναμη, αλλά και φυλακή.</p>
-  <p><b>Όποιος σβήνει</b> ξαναγεννιέται στη σειρά του, σε νέο αστέρι, με 0. <b>Στο τέλος</b> μετρά η Τεχνολογία συν τους πόντους της κρυφής ψυχής.</p>`);
+  <p><b>Όποιος σβήνει</b> ξαναγεννιέται στη σειρά του, σε νέο αστέρι, με 0. <b>Στο τέλος</b> μετρά η Τεχνολογία συν τους πόντους του κρυφού δόγματος.</p>`);
 }
 function saveChronicle(){
   const txt='ΣΚΟΤΕΙΝΟ ΔΑΣΟΣ · Το Χρονικό του Γαλαξία\n'+new Date().toLocaleString('el-GR')+'\n\n'+S.log.map(t=>t.startsWith('#')?'\n== '+t.slice(1)+' ==':t).join('\n')+'\n\n'+LICENSE+'\n';
@@ -894,13 +894,13 @@ async function startGame(){
   S=newState(setupCivs().map(c=>c.name), +$('#nRounds').value);
   $('#setup').classList.add('hidden'); $('#app').classList.remove('hidden'); drawMap(); renderAll();
   log('Ο γαλαξίας είναι σκοτεινός. Κάπου μέσα του κρύβονται '+S.civs.map(c=>'οι '+c.name).join(', ')+'.');
-  await info('Κρυφτείτε', `<p>${mp()?'Οι νησίδες με tablet διαλέγουν κρυφά το αστέρι τους στο tablet και βλέπουν εκεί την κρυφή ψυχή τους. ':''}${S.civs.some((c,i)=>!live(players[i]))?'Οι νησίδες χωρίς tablet γράφουν το αστέρι τους σε post-it για το Σύμπαν.':''}</p><p style="color:var(--muted)">Όταν κρυφτούν όλοι, πατήστε «Συνέχεια».</p>`);
+  await info('Κρυφτείτε', `<p>${mp()?'Οι νησίδες με tablet διαλέγουν κρυφά το αστέρι τους στο tablet και βλέπουν εκεί το κρυφό δόγμα τους. ':''}${S.civs.some((c,i)=>!live(players[i]))?'Οι νησίδες χωρίς tablet γράφουν το αστέρι τους σε post-it για το Σύμπαν.':''}</p><p style="color:var(--muted)">Όταν κρυφτούν όλοι, πατήστε «Συνέχεια».</p>`);
   for(let i=0;i<S.civs.length;i++){ if(live(players[i])) continue; await showSoul(i); }
   await startRound();
 }
 async function showSoul(i){
   const c=S.civs[i];
-  const v=await modal(`Κρυφή ψυχή: ${esc(c.name)}`,`<p>Ένας/μία εκπρόσωπος των <b style="color:${c.color}">${esc(c.name)}</b> έρχεται στον πίνακα. <b>Όλοι οι άλλοι γυρίζουν την πλάτη.</b></p>`,[['Δείξε','show'],['Αργότερα','later']]);
+  const v=await modal(`Κρυφό δόγμα: ${esc(c.name)}`,`<p>Ένας/μία εκπρόσωπος των <b style="color:${c.color}">${esc(c.name)}</b> έρχεται στον πίνακα. <b>Όλοι οι άλλοι γυρίζουν την πλάτη.</b></p>`,[['Δείξε','show'],['Αργότερα','later']]);
   if(v!=='show') return;
   const s=soul(c);
   await info(`${esc(s.n)}`,`<p>${esc(s.g)}</p><p><b>${esc(s.b)}</b></p><p style="color:var(--muted)">Θυμηθείτε το. Πατήστε «Συνέχεια» για να κρυφτεί.</p>`);
@@ -915,7 +915,7 @@ function resumeGame(){
   if(S.phase==='positions'){ startRound(); }
 }
 async function menu(){
-  const v=await modal('Μενού','<p>Τι θέλετε;</p>',[['QR για τα tablet','qr'],['Ελευθέρωσε ένα tablet','free'],['Ψυχή νησίδας χωρίς tablet','soul'],['Αλλάξτε έναν νόμο','rules'],['Τέλος παιχνιδιού τώρα','end'],['Νέο παιχνίδι','new'],['Άκυρο','x']]);
+  const v=await modal('Μενού','<p>Τι θέλετε;</p>',[['QR για τα tablet','qr'],['Ελευθέρωσε ένα tablet','free'],['Δόγμα νησίδας χωρίς tablet','soul'],['Αλλάξτε έναν νόμο','rules'],['Τέλος παιχνιδιού τώρα','end'],['Νέο παιχνίδι','new'],['Άκυρο','x']]);
   if(v==='qr'){ initPeer(); const url=location.origin+location.pathname+'?join='+boardId();
     const pr=info('Σύνδεση tablet','<p>Σκανάρετε με το tablet της νησίδας. Αν η σελίδα έκλεισε, το tablet ξαναβρίσκει μόνο του τον πολιτισμό του.</p><div id="mqr" class="qrimg" style="display:inline-block"></div>');
     setTimeout(()=>{ try{ new QRCode($('#mqr'),{text:url,width:260,height:260}); }catch(e){} },50); await pr; }
@@ -983,7 +983,7 @@ function initPlayer(){
     P.innerHTML=''; const on=!!(conn&&conn.open);
     const top=el('div',{class:'ptop'}); top.innerHTML=`<span class="pill ${on?'on':''}">${on?'Συνδεδεμένο':'Σύνδεση…'}</span><span style="flex:1"></span>`;
     top.appendChild(btn(hide?'👁 Δείξε τα μυστικά':'🙈 Κρύψε τα μυστικά','ghost',()=>{hide=!hide;draw();})); P.appendChild(top);
-    P.appendChild(el('div',{class:'lbl',style:'font-size:14px;margin:-2px 0 6px'}, hide?'Τα μυστικά σας είναι θολά. Πατήστε «Δείξε» όταν δεν κοιτάζει άλλη νησίδα.':'Αν πλησιάσει άλλη νησίδα, πατήστε «Κρύψε»: θολώνει την ψυχή σας, το αστέρι σας και ό,τι σας ψιθύρισε το Σύμπαν.'));
+    P.appendChild(el('div',{class:'lbl',style:'font-size:14px;margin:-2px 0 6px'}, hide?'Τα μυστικά σας είναι θολά. Πατήστε «Δείξε» όταν δεν κοιτάζει άλλη νησίδα.':'Αν πλησιάσει άλλη νησίδα, πατήστε «Κρύψε»: θολώνει το δόγμα σας, το αστέρι σας και ό,τι σας ψιθύρισε το Σύμπαν.'));
     P.classList.toggle('blur',hide);
     if(!v){ P.appendChild(el('p',{},'Περιμένουμε τον πίνακα…')); return; }
     if(v.me==null){
@@ -1002,13 +1002,13 @@ function initPlayer(){
     h.innerHTML=`<div class="prow"><span style="background:${me.color};width:24px;height:24px;border-radius:50%;display:inline-block"></span><h2 style="flex:1;color:${me.color}">${esc(me.name)}</h2><span style="font-size:34px;font-weight:800">${me.T??''}</span><span class="lbl">Τεχνολογία</span></div>
       <div class="lbl secret" style="margin-top:6px">${st}${v.tokens&&v.tokens.length?` · <b style="color:var(--fic)">νόμοι διαθέσιμοι: ${v.tokens.length}</b>`:''}${v.hostage?` · κρατάτε όμηρο τους ${esc(v.hostage)}`:''}</div>`;
     P.appendChild(h);
-    if(v.soul) P.appendChild(el('div',{class:'pbox secret',style:'border-color:var(--fic)'},`<div class="lbl">Η κρυφή ψυχή σας</div><h3 style="color:var(--fic)">${esc(v.soul.n)}</h3><p>${esc(v.soul.g)} <b>${esc(v.soul.b)}</b></p>`));
+    if(v.soul) P.appendChild(el('div',{class:'pbox secret',style:'border-color:var(--fic)'},`<div class="lbl">Το κρυφό δόγμα σας: τι πιστεύει ο πολιτισμός σας για το σύμπαν και τι θέλει. Δεν το ξέρει κανείς άλλος.</div><h3 style="color:var(--fic)">${esc(v.soul.n)}</h3><p>${esc(v.soul.g)} <b>${esc(v.soul.b)}</b></p>`));
     if(v.whispers && v.whispers.length){
       if(v.whispers.length>seen && navigator.vibrate) navigator.vibrate(250); seen=v.whispers.length;
       P.appendChild(el('div',{class:'pbox secret feed'},'<h3>Μόνο για εσάς</h3>'+v.whispers.slice().reverse().slice(0,4).map((t,k)=>`<p class="${k?'old':''}">${esc(t)}</p>`).join('')));
     }
     if(v.setup){ P.appendChild(el('div',{class:'pbox'},'<h2>Περιμένετε</h2><p>Το παιχνίδι ξεκινά σε λίγο. Συζητήστε: θα κρυφτείτε ή θα φανείτε;</p>')); return; }
-    if(v.phase==='end'){ P.appendChild(el('div',{class:'pbox'},'<h2>Ο γαλαξίας σωπαίνει</h2><p>Κοιτάξτε τον πίνακα: εκεί αποκαλύπτονται οι ψυχές.</p>')); return; }
+    if(v.phase==='end'){ P.appendChild(el('div',{class:'pbox'},'<h2>Ο γαλαξίας σωπαίνει</h2><p>Κοιτάξτε τον πίνακα: εκεί αποκαλύπτονται τα δόγματα.</p>')); return; }
     if(v.needPos){ P.appendChild(starGrid('Διαλέξτε κρυφά το αστέρι σας (2-12)', v.ruins||[], k=>send({type:'setPos',star:k}))); return; }
     if(v.turn===v.me && !v.busy){
       const ex=(v.ruins||[]).concat(v.pos!=null?[v.pos]:[]);
