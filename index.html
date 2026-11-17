@@ -596,10 +596,10 @@ async function applyEvent(e){
       const [spy,target]=shuffle(A);
       const tp=S.civs[target].known ?? S.pos[target];
       if(consoleOn() && tp!=null){
-        whisper(`Κατάσκοπος: πες κρυφά στους ${S.civs[spy].name} ότι οι ${S.civs[target].name} είναι στο αστέρι ${tp}.`);
+        whisper(`Κατάσκοπος: πες κρυφά στην ομάδα «${S.civs[spy].name}» ότι οι ${S.civs[target].name} είναι στο αστέρι ${tp}.`);
         await info('Ο κατάσκοπος',`<p>Οι <b style="color:${S.civs[spy].color}">${esc(S.civs[spy].name)}</b> αποκτούν κατάσκοπο. Το Σύμπαν θα τους ψιθυρίσει μια θέση.</p>`);
       } else {
-        await info('Το Σύμπαν ψιθυρίζει',`<p>Πες κρυφά στους <b style="color:${S.civs[spy].color}">${esc(S.civs[spy].name)}</b> πού κρύβονται οι <b style="color:${S.civs[target].color}">${esc(S.civs[target].name)}</b> (κοίτα το post-it).</p>`,{universe:true});
+        await info('Το Σύμπαν ψιθυρίζει',`<p>Πες κρυφά στην ομάδα <b style="color:${S.civs[spy].color}">${esc(S.civs[spy].name)}</b> πού κρύβονται οι <b style="color:${S.civs[target].color}">${esc(S.civs[target].name)}</b> (κοίτα το post-it).</p>`,{universe:true});
       }
       log(`Οι ${S.civs[spy].name} απέκτησαν κατάσκοπο. Κάτι ξέρουν τώρα.`); break;
     }
@@ -655,10 +655,10 @@ async function actListen(i){
     heard.push(s);
   }
   if(consoleOn() && allPosKnown()){
-    heard.forEach(s=>{ const j=S.pos.findIndex((p,x)=>p===s && S.civs[x].alive && x!==i); whisper(`Ακρόαση των ${c.name} στο ${s}: ${j>=0?'ΖΩΗ':'σιωπή'}.`); });
+    heard.forEach(s=>{ const j=S.pos.findIndex((p,x)=>p===s && S.civs[x].alive && x!==i); whisper(`${c.name}, ακρόαση στο αστέρι ${s}: ${j>=0?'ΖΩΗ':'σιωπή'}.`); });
     await info('Ακρόαση',`<p>Οι <b style="color:${c.color}">${esc(c.name)}</b> στρέφουν τις κεραίες στο ${heard.join(' και ')}. Το Σύμπαν θα τους ψιθυρίσει τι άκουσαν.</p>`);
   } else {
-    await info('Το Σύμπαν ψιθυρίζει',`<p>Πες κρυφά στους <b style="color:${c.color}">${esc(c.name)}</b> αν ζει κάτι στο αστέρι ${heard.join(' και στο ')} (μόνο «ζωή» ή «σιωπή», όχι ποιος).</p>`,{universe:true});
+    await info('Το Σύμπαν ψιθυρίζει',`<p>Πες κρυφά στην ομάδα <b style="color:${c.color}">${esc(c.name)}</b> αν ζει κάτι στο αστέρι ${heard.join(' και στο ')} (μόνο «ζωή» ή «σιωπή», όχι ποιος).</p>`,{universe:true});
   }
   log(`Οι ${c.name} ακούν τον ουρανό.`);
 }
@@ -692,13 +692,13 @@ async function actStrike(i){
 async function actMove(i){
   const c=S.civs[i]; c.T-= S.flags.wormhole?0:2; c.known=null; S.pos[i]=null;
   if(consoleOn()) whisper(`Οι ${c.name} μεταναστεύουν: γράψε στην κονσόλα το νέο τους αστέρι.`);
-  await info('Μετανάστευση',`<p>Οι <b style="color:${c.color}">${esc(c.name)}</b> χάνονται ξανά στο σκοτάδι. Γράψτε το νέο σας αστέρι σε post-it και δώστε το στο Σύμπαν.</p>`);
+  await info('Μετανάστευση',`<p>Οι <b style="color:${c.color}">${esc(c.name)}</b> χάνονται ξανά στο σκοτάδι. Πείτε κρυφά στο Σύμπαν το νέο σας αστέρι, σε post-it ή ψιθυριστά.</p>`);
   log(`Οι ${c.name} μετανάστευσαν. Κανείς δεν ξέρει πού.`);
 }
 async function actRebirth(i){
   const c=S.civs[i]; c.alive=true; c.rebirth=false; c.T=0; c.known=null; S.pos[i]=null;
   if(consoleOn()) whisper(`Οι ${c.name} ξαναγεννιούνται: γράψε στην κονσόλα το νέο τους αστέρι.`);
-  await info('Ένας νέος πολιτισμός',`<p>Σε άλλο αστέρι, ένα νέο είδος σηκώνει τα μάτια στον ουρανό. Οι <b style="color:${c.color}">${esc(c.name)}</b> ξεκινούν από την αρχή. Νέο αστέρι σε post-it για το Σύμπαν.</p>`);
+  await info('Ένας νέος πολιτισμός',`<p>Σε άλλο αστέρι, ένα νέο είδος σηκώνει τα μάτια στον ουρανό. Οι <b style="color:${c.color}">${esc(c.name)}</b> ξεκινούν από την αρχή. Πείτε κρυφά στο Σύμπαν το νέο σας αστέρι, σε post-it ή ψιθυριστά.</p>`);
   log(`Ένα νέο είδος γεννιέται κάπου στο σκοτάδι: οι ${c.name}, από την αρχή.`);
 }
 
