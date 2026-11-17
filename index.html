@@ -450,24 +450,30 @@ function renderEvent(){
     box.style.borderColor='var(--line)';
     box.innerHTML=`<span class="cat" style="background:#56658a;color:#fff">Επιστήμη, υπόθεση ή μυθοπλασία;</span>
       <h3>${esc(e.t)}</h3><div class="eff">${esc(e.e)}</div>
-      <div class="truth">Κάθε πολιτισμός μαντεύει. Όποιος βρει την κατηγορία κερδίζει +1 Τεχνολογία.</div>
+      <div class="truth">Κάθε πολιτισμός μαντεύει κρυφά. Όποιος βρει την κατηγορία κερδίζει +1 Τεχνολογία. Οι απαντήσεις φαίνονται στην αποκάλυψη.</div>
       <div id="guess" style="margin-top:10px"></div>`;
     const g=box.querySelector('#guess');
     alive().forEach(i=>{
       const c=S.civs[i]; const r=el('div',{class:'g'});
+      const done = c.guess ? '<b style="color:var(--ok)">✓ μάντεψαν</b>' : '<span style="color:var(--muted)">σκέφτονται…</span>';
       r.innerHTML=`<span class="dot" style="background:${c.color}"></span><span>${esc(c.name)}</span>`;
-      ['E','Y','M'].forEach(k=>{
-        const b=el('button',{},k==='E'?'Ε':k==='Y'?'Υ':'Μ');
-        if(c.guess===k){ b.classList.add('on'); b.style.background=CAT[k].c; }
-        b.onclick=()=>{ c.guess = c.guess===k?null:k; renderEvent(); save(); };
-        r.appendChild(b);
-      });
+      if(live(players[i])){ r.insertAdjacentHTML('beforeend', `<span style="flex:none">📱 ${done}</span>`); }
+      else {
+        // νησίδα χωρίς tablet: πατά στον πίνακα· η επιλογή δεν χρωματίζεται, για να μη φαίνεται
+        r.insertAdjacentHTML('beforeend', `<span style="flex:none;font-size:14px">${c.guess?'✓':''}</span>`);
+        ['E','Y','M'].forEach(k=>{
+          const b=el('button',{},k==='E'?'Ε':k==='Y'?'Υ':'Μ');
+          b.onclick=()=>{ c.guess = c.guess===k?null:k; renderEvent(); save(); sendPlayers(); };
+          r.appendChild(b);
+        });
+      }
       g.appendChild(r);
     });
   } else {
     box.style.borderColor=CAT[e.cat].c;
     box.innerHTML=`<span class="cat" style="background:${CAT[e.cat].c}">${CAT[e.cat].n}</span>
-      <h3>${esc(e.t)}</h3><div class="eff">${esc(e.e)}</div><div class="truth"><b>Τι ισχύει;</b> ${esc(e.w)}</div>`;
+      <h3>${esc(e.t)}</h3><div class="eff">${esc(e.e)}</div><div class="truth"><b>Τι ισχύει;</b> ${esc(e.w)}</div>
+      <div class="truth">${S.civs.filter(c=>c.guess).map(c=>`<span style="color:${c.color};font-weight:700">${esc(c.name)}</span>: ${CAT[c.guess].n} ${c.guess===e.cat?'✓':'✗'}`).join(' · ') || 'Κανείς δεν μάντεψε.'}</div>`;
   }
 }
 function renderAct(){
@@ -596,7 +602,7 @@ async function revealEvent(){
   const e=ev(); S.revealed=true;
   const won=alive().filter(i=>S.civs[i].guess===e.cat);
   won.forEach(i=>S.civs[i].T+=1);
-  log(`Κάρτα: «${e.t}» (${CAT[e.cat].n}).` + (won.length?` Τη μάντεψαν: ${won.map(i=>S.civs[i].name).join(', ')} (+1).`:''));
+  log(`Κάρτα: «${e.t}» (${CAT[e.cat].n}).` + (won.length?` Τη μάντεψαν: ${won.map(i=>S.civs[i].name).join(', ')} (+1).`:' Κανείς δεν τη μάντεψε.'));
   renderAll();
   try{ await applyEvent(e); } finally { busy=false; }
   S.phase='turns'; S.turnIdx=-1; nextTurn();
@@ -953,11 +959,12 @@ async function startGame(){
 }
 function resumeGame(){
   const s=store.get('skd-state'); if(!s){ info('Δεν βρέθηκε','<p>Δεν υπάρχει αποθηκευμένο παιχνίδι σε αυτόν τον υπολογιστή.</p>'); return; }
-  S=s; if(!S.pw) S.pw=S.civs.map(()=>[]); $('#setup').classList.add('hidden'); $('#app').classList.remove('hidden'); drawMap();
+  S=s; if(!S.pw) S.pw=S.civs.map(()=>[]); initPeer(); $('#setup').classList.add('hidden'); $('#app').classList.remove('hidden'); drawMap();
   if(S.phase==='turns' && S.turnIdx>=S.order.length) S.turnIdx=S.order.length-1;
   if(S.phase==='event' && S.revealed){ S.phase='turns'; S.turnIdx=Math.max(0,S.turnIdx); }
   renderAll();
   if(S.phase==='roundEnd'){ if(S.round>=S.rounds) endGame(); else startRound(); }
+  if(S.phase==='positions'){ S.round=0; startRound(); }
 }
 async function menu(){
   const v=await modal('Μενού','<p>Τι θέλετε;</p>',[['QR για τα tablet','qr'],['Ελευθέρωσε ένα tablet','free'],['Αλλάξτε έναν κανόνα','rules'],['Τέλος παιχνιδιού τώρα','end'],['Νέο παιχνίδι','new'],['Άκυρο','x']]);
@@ -1161,7 +1168,9 @@ else {
   $('#nCivs').addEventListener('change',renderSetupStatus);
   $('#btnSave').onclick=saveChronicle;
   $('#btnMenu').onclick=menu;
-  if(!store.get('skd-state')) $('#btnResume').classList.add('hidden');
+  { const saved=store.get('skd-state');
+    if(!saved) $('#btnResume').classList.add('hidden');
+    else if(saved.phase!=='end'){ resumeGame(); setTimeout(()=>note('Συνεχίζουμε',`Γύρος ${S.round} από ${S.rounds}. Τα tablet ξανασυνδέονται μόνα τους σε λίγα δευτερόλεπτα. Για νέο παιχνίδι: «Μενού» → «Νέο παιχνίδι».`),300); } }
 }
 </script>
 </body>
