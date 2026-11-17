@@ -179,30 +179,31 @@ body.console{overflow:auto;user-select:auto}
     </div>
     <div class="grid" id="civInputs"></div>
 
-    <div class="card">
-      <b>Το Σύμπαν</b> (ο/η εκπαιδευτικός) ξέρει πού κρύβεται κάθε πολιτισμός. Δύο τρόποι:
-      <p style="margin:.5em 0 0">① <b>Post-it:</b> κάθε νησίδα γράφει κρυφά το αστέρι της (2-12) σε post-it και το δίνει διπλωμένο στο Σύμπαν. Όταν χρειάζεται, ο πίνακας ρωτά το Σύμπαν.</p>
-      <p style="margin:.3em 0 0">② <b>Κονσόλα:</b> το Σύμπαν σκανάρει τον κωδικό με το κινητό του. Οι θέσεις και οι ψίθυροι φαίνονται μόνο εκεί, και ο πίνακας λύνει μόνος του τα χτυπήματα.</p>
+    <div class="card" style="border:2px solid var(--sci)">
+      <b style="font-size:20px">Βήμα 1 · Τα tablet των νησίδων</b>
+      <p style="margin:.5em 0 0">Πατήστε το κουμπί και κάθε νησίδα σκανάρει τον κωδικό με <b>το δικό της tablet</b>. Στο tablet διαλέγει ποιος πολιτισμός είναι και του δίνει όνομα. Από εκεί κρύβεται, μαντεύει και παίζει. Τα μυστικά της φαίνονται μόνο στο tablet της.</p>
       <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button id="btnConsole" class="ghost">Σύνδεση κονσόλας (QR)</button>
+        <button id="btnTablets" class="primary">Δείξε το QR για τα tablet</button><span id="tabState"></span>
+      </div>
+      <div id="qrboxP" class="hidden" style="margin-top:12px;display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+        <div class="qrimg" style="background:#fff;padding:10px;border-radius:12px"></div>
+        <div style="max-width:420px;font-size:16px;color:var(--muted)" id="qrtextP"></div>
+      </div>
+      <p style="margin:.6em 0 0;color:var(--muted);font-size:15px">Νησίδα χωρίς tablet: γράφει το αστέρι της σε post-it, το δίνει στον/στην εκπαιδευτικό και παίζει πατώντας στον πίνακα.</p>
+    </div>
+
+    <details class="card">
+      <summary style="cursor:pointer"><b>Για τον/την εκπαιδευτικό (προαιρετικό):</b> κονσόλα του Σύμπαντος στο κινητό</summary>
+      <p style="margin:.5em 0 0">Χρειάζεται μόνο αν κάποιες νησίδες παίζουν χωρίς tablet: στο κινητό σου περνάς τα αστέρια τους από τα post-it, και ο πίνακας λύνει μόνος του τα χτυπήματα. <b>Δεν είναι για τις νησίδες.</b></p>
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button id="btnConsole" class="ghost">Δείξε το QR της κονσόλας</button>
         <span id="conState" class="pill">Κονσόλα: όχι</span>
       </div>
       <div id="qrbox" class="hidden" style="margin-top:12px">
         <div id="qr" class="qrimg"></div>
         <div style="max-width:420px;font-size:16px;color:var(--muted)" id="qrtext"></div>
       </div>
-    </div>
-
-    <div class="card">
-      <b>Tablet νησίδων</b> (ένα ανά νησίδα, προαιρετικά): η νησίδα κρύβεται, μαντεύει, ακούει και παίζει από το tablet της. Τα μυστικά της φαίνονται μόνο εκεί. Νησίδα χωρίς tablet παίζει στον πίνακα.
-      <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button id="btnTablets" class="ghost">Σύνδεση tablet (QR)</button><span id="tabState"></span>
-      </div>
-      <div id="qrboxP" class="hidden" style="margin-top:12px;display:flex;gap:18px;align-items:center;flex-wrap:wrap">
-        <div class="qrimg" style="background:#fff;padding:10px;border-radius:12px"></div>
-        <div style="max-width:420px;font-size:16px;color:var(--muted)" id="qrtextP"></div>
-      </div>
-    </div>
+    </details>
 
     <div class="line">
       <button class="primary" id="btnStart" style="font-size:24px;min-height:64px;padding:0 34px">Έναρξη</button>
@@ -906,8 +907,8 @@ function makeQR(box, txt, url, msg){
   const q=box.querySelector('.qrimg'); q.innerHTML=''; try{ new QRCode(q,{text:url,width:200,height:200}); }catch(e){}
   txt.innerHTML=msg+`<br><small style="word-break:break-all">${esc(url)}</small>`;
 }
-function showQR(){ makeQR($('#qrbox'),$('#qrtext'),location.origin+location.pathname+'?universe='+boardId(),'Σκάναρε με το κινητό του Σύμπαντος. Δεν δείχνεις την κονσόλα στην τάξη.'); }
-function showQRP(){ makeQR($('#qrboxP'),$('#qrtextP'),location.origin+location.pathname+'?join='+boardId(),'Κάθε νησίδα σκανάρει με το tablet της και διαλέγει ποιος πολιτισμός είναι.'); renderSetupStatus(); }
+function showQR(){ $('#qrboxP').classList.add('hidden'); makeQR($('#qrbox'),$('#qrtext'),location.origin+location.pathname+'?universe='+boardId(),'Σκάναρε με το κινητό του Σύμπαντος. Δεν δείχνεις την κονσόλα στην τάξη.'); }
+function showQRP(){ $('#qrbox').classList.add('hidden'); makeQR($('#qrboxP'),$('#qrtextP'),location.origin+location.pathname+'?join='+boardId(),'Κάθε νησίδα σκανάρει με το tablet της και διαλέγει ποιος πολιτισμός είναι.'); renderSetupStatus(); }
 function renderSetupStatus(){
   const b=$('#tabState'); if(!b) return;
   const n=+$('#nCivs').value; const names=setupCivs();
@@ -951,7 +952,12 @@ function resumeGame(){
   if(S.phase==='roundEnd'){ if(S.round>=S.rounds) endGame(); else startRound(); }
 }
 async function menu(){
-  const v=await modal('Μενού','<p>Τι θέλετε;</p>',[['Αλλάξτε έναν κανόνα','rules'],['Τέλος παιχνιδιού τώρα','end'],['Νέο παιχνίδι','new'],['Άκυρο','x']]);
+  const v=await modal('Μενού','<p>Τι θέλετε;</p>',[['QR για τα tablet','qr'],['Αλλάξτε έναν κανόνα','rules'],['Τέλος παιχνιδιού τώρα','end'],['Νέο παιχνίδι','new'],['Άκυρο','x']]);
+  if(v==='qr'){
+    initPeer(); const url=location.origin+location.pathname+'?join='+boardId();
+    const pr=info('Σύνδεση tablet',`<p>Σκανάρετε με το tablet της νησίδας. Αν η σελίδα έκλεισε, το tablet ξαναβρίσκει μόνο του τον πολιτισμό του.</p><div id="mqr" style="background:#fff;padding:10px;border-radius:12px;display:inline-block"></div>`);
+    setTimeout(()=>{ try{ new QRCode($('#mqr'),{text:url,width:260,height:260}); }catch(e){} },50); await pr;
+  }
   if(v==='rules') showRules();
   if(v==='end' && S.phase!=='end'){ await endGame(); }
   if(v==='new'){ const ok=await modal('Νέο παιχνίδι;','<p>Το τρέχον παιχνίδι θα χαθεί. Αποθηκεύσατε το χρονικό;</p>',[['Ναι, νέο','y'],['Όχι','n']]); if(ok==='y'){ store.set('skd-state',null); location.reload(); } }
@@ -964,7 +970,7 @@ function initConsole(){
   document.body.classList.add('console');
   ['#setup','#app','#rules','#foot'].forEach(s=>$(s).classList.add('hidden'));
   const C=$('#con'); C.classList.remove('hidden');
-  C.innerHTML=`<h1>Κονσόλα του Σύμπαντος</h1><p id="cst" class="pill">Σύνδεση…</p>
+  C.innerHTML=`<h1>Κονσόλα του Σύμπαντος</h1><p style="font-size:16px;color:var(--muted)">Αυτή η οθόνη είναι <b>μόνο για τον/την εκπαιδευτικό</b>. Εδώ περνάς τα αστέρια των νησίδων που παίζουν χωρίς tablet (από τα post-it) και βλέπεις τι να τους ψιθυρίσεις. Οι νησίδες με tablet σκανάρουν το <b>άλλο</b> QR («Δείξε το QR για τα tablet»).</p><p id="cst" class="pill">Σύνδεση…</p>
     <div style="display:flex;gap:8px;margin:10px 0"><button class="ghost" id="cblur">Κρύψε τα μυστικά</button></div>
     <h3 style="margin-top:10px">Ψίθυροι</h3><div class="feed" id="cfeed"><p class="old">Ακόμα τίποτα.</p></div>
     <h3 style="margin-top:16px">Πού κρύβεται ο καθένας</h3><div id="clist"></div><div id="csel"></div>
