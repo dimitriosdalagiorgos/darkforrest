@@ -430,7 +430,7 @@ function renderCivs(){
     let st = !c.alive ? 'Σβησμένος: ξαναγεννιέται στη σειρά του' : (c.known ? `Φανερός στο αστέρι ${c.known}` : (players[i] && S.pos[i]==null ? 'Διαλέγει κρυψώνα στο tablet…' : 'Κρυμμένος στο σκοτάδι'));
     if(players[i]) st = '📱 ' + st;
     d.innerHTML = `<div class="nm"><span class="dot"></span>${esc(c.name)}</div>
-      <div class="row"><span class="tech">${c.T}</span><span class="lbl">Τεχνολογία</span><span style="flex:1"></span>
+      <div class="row"><span class="tech">${live(players[i])&&S.phase!=='end'?'🔒':c.T}</span><span class="lbl">${live(players[i])&&S.phase!=='end'?'Τεχνολογία<br>στο tablet':'Τεχνολογία'}</span><span style="flex:1"></span>
       <button class="adj" data-a="-1">−</button><button class="adj" data-a="1">+</button></div>
       <div class="st">${st}</div>`;
     d.querySelectorAll('.adj').forEach(b=>b.onclick=()=>{ c.T=Math.max(0,c.T+ +b.dataset.a); renderAll(); });
@@ -489,6 +489,11 @@ function renderAct(){
   const i=cur(), c=S.civs[i], f=S.flags;
   const who=el('div',{class:'who',style:`--c:${c.color}`}); who.innerHTML=`<b style="color:${c.color}">${esc(c.name)}</b><small>Σειρά ${S.turnIdx+1} από ${S.order.length}</small>`;
   a.appendChild(who);
+  // Νησίδα με tablet: τα κουμπιά δεν φαίνονται στον πίνακα (θα πρόδιδαν την Τεχνολογία της).
+  if(live(players[i]) && S.boardFor!==i){
+    a.appendChild(el('div',{style:'flex:1;display:flex;align-items:center;font-size:clamp(18px,1.4vw,26px);color:var(--muted)'},'📱 Παίζουν από το tablet τους…'));
+    const o=el('button',{class:'ghost'},'Το tablet δεν απαντά: παίξτε εδώ'); o.onclick=()=>{ S.boardFor=i; renderAct(); }; a.appendChild(o); return;
+  }
   const acts=el('div',{class:'acts'});
   if(c.rebirth){
     const b=el('button',{},`${ICON.grow}Ξαναγεννιέται<small>νέο κρυφό αστέρι, 0 Τ</small>`); b.onclick=()=>run(()=>actRebirth(i)); acts.appendChild(b);
@@ -665,6 +670,7 @@ async function nextTurn(){
   if(S.phase!=='turns'){ renderAll(); return; }
   S.turnIdx++;
   if(S.turnIdx>=S.order.length){ await endRound(); return; }
+  S.boardFor=null;
   const i=cur(); const c=S.civs[i];
   if(!c.alive){ c.rebirth=true; }
   renderAll();
@@ -702,8 +708,15 @@ async function getStars(i, text, n, allowed, p){
   return out;
 }
 async function actGrow(i){
-  const v=await rollDice(1,`${esc(S.civs[i].name)}: ανάπτυξη`); const g=v>=4?2:1;
-  S.civs[i].T+=g; log(`Οι ${S.civs[i].name} αναπτύσσονται σιωπηλά (+${g}).`);
+  const c=S.civs[i];
+  if(live(players[i])){
+    const v=rnd(6), g=v>=4?2:1; c.T+=g;
+    tell(i,`Ανάπτυξη: το ζάρι έφερε ${v}, άρα +${g} Τεχνολογία.`);
+    note('Σιωπή',`Κάπου στο σκοτάδι, οι <b style="color:${c.color}">${esc(c.name)}</b> έκαναν μια σιωπηλή κίνηση.`);
+  } else {
+    const v=await rollDice(1,`${esc(c.name)}: ανάπτυξη`); const g=v>=4?2:1; c.T+=g;
+  }
+  log(`Κάπου στο σκοτάδι, οι ${c.name} έκαναν μια σιωπηλή κίνηση.`);
 }
 async function actListen(i,p){
   const c=S.civs[i]; const n=S.flags.seti?2:1;
@@ -714,11 +727,11 @@ async function actListen(i,p){
       const t=`Ακρόαση στο αστέρι ${s}: ${j>=0?'ΖΩΗ':'σιωπή'}.`;
       if(players[i]) tell(i,t); else whisper(`${c.name}, ${t}`);
     });
-    note('Ακρόαση',`Οι <b style="color:${c.color}">${esc(c.name)}</b> στρέφουν τις κεραίες στον ουρανό.`);
+    note('Σιωπή',`Κάπου στο σκοτάδι, οι <b style="color:${c.color}">${esc(c.name)}</b> έκαναν μια σιωπηλή κίνηση.`);
   } else {
     await info('Το Σύμπαν ψιθυρίζει',`<p>Πες κρυφά στην ομάδα <b style="color:${c.color}">${esc(c.name)}</b> αν ζει κάτι στο αστέρι ${heard.join(' και στο ')} (μόνο «ζωή» ή «σιωπή», όχι ποιος).</p>`,{universe:true});
   }
-  log(`Οι ${c.name} ακούν τον ουρανό.`);
+  log(`Κάπου στο σκοτάδι, οι ${c.name} έκαναν μια σιωπηλή κίνηση.`);
 }
 async function actSignal(i,p){
   const c=S.civs[i];
@@ -749,13 +762,13 @@ async function actStrike(i,p){
   else log('Το χτύπημα δεν άφησε ίχνος.');
 }
 async function actMove(i){
-  const c=S.civs[i]; c.T-= S.flags.wormhole?0:2; c.known=null; S.pos[i]=null;
-  if(players[i]){ tell(i,'Μεταναστεύσατε. Διαλέξτε κρυφά το νέο σας αστέρι.'); note('Μετανάστευση',`Οι <b style="color:${c.color}">${esc(c.name)}</b> χάνονται ξανά στο σκοτάδι.`); }
+  const c=S.civs[i]; const wasKnown=c.known!=null; c.T-= S.flags.wormhole?0:2; c.known=null; S.pos[i]=null;
+  if(players[i]){ tell(i,'Μεταναστεύσατε. Διαλέξτε κρυφά το νέο σας αστέρι.'); note(wasKnown?'Μετανάστευση':'Σιωπή', wasKnown?`Οι <b style="color:${c.color}">${esc(c.name)}</b> χάνονται ξανά στο σκοτάδι.`:`Κάπου στο σκοτάδι, οι <b style="color:${c.color}">${esc(c.name)}</b> έκαναν μια σιωπηλή κίνηση.`); }
   else {
     if(consoleOn()) whisper(`Οι ${c.name} μεταναστεύουν: γράψε στην κονσόλα το νέο τους αστέρι.`);
     await info('Μετανάστευση',`<p>Οι <b style="color:${c.color}">${esc(c.name)}</b> χάνονται ξανά στο σκοτάδι. Πείτε κρυφά στο Σύμπαν το νέο σας αστέρι, σε post-it ή ψιθυριστά.</p>`);
   }
-  log(`Οι ${c.name} μετανάστευσαν. Κανείς δεν ξέρει πού.`);
+  log(wasKnown?`Οι ${c.name} χάθηκαν από τα μάτια όλων. Κανείς δεν ξέρει πού πήγαν.`:`Κάπου στο σκοτάδι, οι ${c.name} έκαναν μια σιωπηλή κίνηση.`);
 }
 async function actRebirth(i){
   const c=S.civs[i]; c.alive=true; c.rebirth=false; c.T=0; c.known=null; S.pos[i]=null;
@@ -890,7 +903,7 @@ function onPlayer(c,d){
 }
 function tell(i,t){ if(!S) return; if(!S.pw) S.pw=S.civs.map(()=>[]); S.pw[i].push(t); save(); sendPlayers(); }
 function pview(civ){
-  const civs=(S?S.civs:setupCivs()).map(c=>({name:c.name,color:c.color,T:c.T||0,alive:c.alive!==false,known:c.known??null,rebirth:!!c.rebirth}));
+  const civs=(S?S.civs:setupCivs()).map((c,k)=>({name:c.name,color:c.color,T:k===civ?(c.T||0):null,alive:c.alive!==false,known:c.known??null,rebirth:!!c.rebirth}));
   const v={type:'view', me:civ, claimed:Object.keys(players).filter(k=>live(players[k])).map(Number), setup:!S, civs};
   if(!S) return v;
   const e=ev(), f=S.flags;
