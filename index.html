@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Σκοτεινό Δάσος</title>
+<meta name="description" content="Επιτραπέζιο παιχνίδι για διαδραστικό πίνακα: πολιτισμοί σε έναν σκοτεινό γαλαξία. Όμιλος Future Worlds.">
+<style>
+:root{
+  --bg:#050a1a; --panel:#0e1a36; --panel2:#132449; --line:#24386a;
+  --text:#e8eefc; --muted:#93a4c8;
+  --sci:#38bdf8; --hyp:#f5b85a; --fic:#a78bfa; --danger:#f87171; --ok:#34d399;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;overflow:hidden;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation}
+button{font:inherit;color:inherit;cursor:pointer;border:0;border-radius:14px;background:var(--panel2);
+  padding:.55em 1em;min-height:48px;transition:transform .08s,background .2s,opacity .2s}
+button:active{transform:scale(.96)}
+button:disabled{opacity:.35;cursor:default}
+button.primary{background:var(--sci);color:#04111f;font-weight:700}
+button.ghost{background:transparent;border:2px solid var(--line)}
+input,select{font:inherit;color:var(--text);background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:.5em .7em;min-height:48px}
+h1,h2,h3{margin:0;font-weight:700}
+.hidden{display:none!important}
+
+/* ---------- πίνακας ---------- */
+#app{display:grid;height:100vh;grid-template-rows:auto 1fr auto;grid-template-columns:clamp(240px,19vw,360px) 1fr clamp(280px,22vw,420px);
+  grid-template-areas:"top top top" "civs map side" "act act act";gap:10px;padding:10px 10px 22px}
+#top{grid-area:top;display:flex;align-items:center;gap:14px;padding:4px 8px}
+#top h1{font-size:clamp(20px,1.7vw,32px);letter-spacing:.04em}
+#top .round{font-size:clamp(16px,1.2vw,24px);color:var(--muted)}
+#top .sp{flex:1}
+#top button{min-height:44px;font-size:15px}
+#civs{grid-area:civs;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.civ{background:var(--panel);border-radius:18px;padding:12px 14px;border:3px solid transparent;position:relative}
+.civ.current{border-color:var(--c);box-shadow:0 0 24px -6px var(--c)}
+.civ.dead{opacity:.45}
+.civ .nm{display:flex;align-items:center;gap:10px;font-size:clamp(17px,1.25vw,24px);font-weight:700}
+.civ .dot{width:18px;height:18px;border-radius:50%;background:var(--c);flex:none}
+.civ .row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.civ .tech{font-size:clamp(26px,2.2vw,42px);font-weight:800;min-width:2ch;text-align:center}
+.civ .lbl{color:var(--muted);font-size:14px}
+.civ .st{font-size:15px;color:var(--muted);margin-top:4px}
+.civ .adj{min-height:34px;min-width:34px;padding:0;border-radius:10px;font-size:18px;background:transparent;border:1px solid var(--line);opacity:.6}
+#mapwrap{grid-area:map;position:relative;background:radial-gradient(ellipse at 50% 45%,#16244a 0%,#070d22 60%,#03060f 100%);border-radius:22px;overflow:hidden}
+#map{width:100%;height:100%;display:block}
+.star{cursor:pointer}
+.star .core{fill:#fff7d6}
+.star .num{font-size:22px;font-weight:700;fill:#c9d6ee;text-anchor:middle;pointer-events:none}
+.star.pick .hit{fill:rgba(56,189,248,.18);stroke:var(--sci);stroke-width:3;stroke-dasharray:6 6;animation:spin 6s linear infinite}
+@keyframes spin{to{stroke-dashoffset:-120}}
+.star.ruin .core{fill:#3b4560}
+#prompt{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:rgba(8,15,34,.92);border:2px solid var(--sci);
+  border-radius:16px;padding:10px 18px;font-size:clamp(17px,1.3vw,24px);display:flex;gap:14px;align-items:center;max-width:92%}
+#side{grid-area:side;display:flex;flex-direction:column;gap:10px;min-height:0}
+#evcard{background:var(--panel);border-radius:20px;padding:16px;flex:none;min-height:180px;position:relative;border:3px solid var(--line)}
+#evcard .cat{display:inline-block;padding:4px 12px;border-radius:999px;font-size:14px;font-weight:700;color:#06101f}
+#evcard h3{font-size:clamp(20px,1.5vw,28px);margin:10px 0 6px}
+#evcard .eff{font-size:clamp(15px,1.05vw,19px);line-height:1.35}
+#evcard .truth{margin-top:10px;font-size:clamp(14px,.95vw,17px);color:var(--muted);line-height:1.35;border-top:1px solid var(--line);padding-top:8px}
+#evcard.flip{animation:flip .6s ease}
+@keyframes flip{0%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
+#guess{display:flex;flex-direction:column;gap:6px}
+#guess .g{display:flex;align-items:center;gap:6px}
+#guess .g .dot{width:14px;height:14px;border-radius:50%;flex:none}
+#guess .g span{flex:1;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#guess .g button{min-height:40px;min-width:46px;padding:0 6px;font-weight:700}
+#guess .g button.on{color:#06101f}
+#log{background:var(--panel);border-radius:20px;padding:12px 14px;flex:1;overflow:auto;font-size:15px;line-height:1.4;min-height:0}
+#log h3{font-size:16px;color:var(--muted);margin-bottom:6px}
+#log p{margin:0 0 6px}
+#log .rh{color:var(--hyp);font-weight:700;margin-top:8px}
+#act{grid-area:act;display:flex;gap:10px;align-items:stretch;padding:2px}
+#act .who{display:flex;flex-direction:column;justify-content:center;min-width:clamp(180px,14vw,260px);padding:0 10px;border-left:8px solid var(--c);border-radius:6px}
+#act .who b{font-size:clamp(18px,1.4vw,26px)}
+#act .who small{color:var(--muted);font-size:15px}
+#act .acts{display:flex;gap:10px;flex:1}
+#act .acts button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:96px;font-size:clamp(17px,1.25vw,23px);font-weight:700;background:var(--panel2);border:2px solid var(--line)}
+#act .acts button small{font-weight:400;color:var(--muted);font-size:14px}
+#act .acts button svg{width:30px;height:30px}
+#act .big{min-width:220px;font-size:22px}
+#foot{position:fixed;right:12px;bottom:2px;font-size:11px;color:#5d6d92;pointer-events:none}
+
+/* ---------- επικαλύψεις ---------- */
+.ov{position:fixed;inset:0;background:rgba(2,5,14,.82);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:26px 30px;max-width:min(860px,92vw);max-height:90vh;overflow:auto;box-shadow:0 20px 80px #000}
+.modal h2{font-size:clamp(22px,1.8vw,34px);margin-bottom:12px}
+.modal p{font-size:clamp(17px,1.2vw,22px);line-height:1.45;margin:.4em 0}
+.modal .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.modal .btns button{font-size:20px;min-height:58px;padding:0 22px}
+.universe{border-color:var(--fic)}
+.universe h2{color:var(--fic)}
+.dice{display:flex;gap:24px;justify-content:center;margin:18px 0}
+.die{width:120px;height:120px;border-radius:22px;background:#f4f6fb;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:16px;box-shadow:inset 0 -6px 0 #c9cfdd}
+.die i{width:22px;height:22px;border-radius:50%;background:#0b1630;align-self:center;justify-self:center;visibility:hidden}
+.die.roll{animation:shake .12s linear infinite}
+@keyframes shake{0%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}100%{transform:rotate(-9deg)}}
+.diceres{text-align:center;font-size:24px;min-height:1.5em}
+
+/* ---------- ρύθμιση ---------- */
+#setup{position:fixed;inset:0;overflow:auto;background:radial-gradient(ellipse at 50% 30%,#16244a,#03060f 70%);z-index:40;display:flex;justify-content:center;padding:4vh 20px}
+#setup .box{max-width:1000px;width:100%}
+#setup h1{font-size:clamp(34px,4vw,64px);letter-spacing:.06em}
+#setup .sub{color:var(--muted);font-size:clamp(16px,1.3vw,22px);margin:.4em 0 1.4em}
+#setup .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:10px 0 18px}
+#setup .civin{display:flex;align-items:center;gap:8px;background:var(--panel);padding:8px 10px;border-radius:14px}
+#setup .civin .dot{width:22px;height:22px;border-radius:50%;flex:none}
+#setup .civin input{flex:1;min-width:0}
+#setup .line{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0;font-size:19px}
+#setup .card{background:var(--panel);border-radius:18px;padding:14px 18px;margin:12px 0;font-size:17px;line-height:1.45}
+#qrbox{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+#qr{background:#fff;padding:10px;border-radius:12px}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--panel2);font-size:14px;color:var(--muted)}
+.pill.on{background:var(--ok);color:#04111f}
+
+/* ---------- κανόνες προς αλλαγή ---------- */
+#rules{position:fixed;inset:0;background:var(--bg);z-index:45;overflow:auto;padding:24px}
+#rules h1{font-size:clamp(26px,2.4vw,44px)}
+#rules .sub{color:var(--muted);font-size:20px;margin:6px 0 16px}
+#rules .rg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+#rules .rc{background:var(--panel);border-radius:18px;padding:16px;border-top:6px solid var(--k);cursor:pointer}
+#rules .rc b{font-size:20px;display:block;margin:6px 0}
+#rules .rc small{color:var(--muted);font-size:15px}
+#rules .big{background:var(--panel);border-radius:24px;padding:28px;border:3px solid var(--k);margin-top:16px}
+#rules .big .t1{font-size:clamp(22px,2vw,36px);line-height:1.35}
+#rules .big .t2{font-size:clamp(26px,2.6vw,46px);font-weight:800;margin-top:18px;line-height:1.3}
+#rules .big .t3{font-size:clamp(17px,1.3vw,22px);color:var(--muted);margin-top:18px}
+
+/* ---------- κονσόλα του Σύμπαντος ---------- */
+body.console{overflow:auto;user-select:auto}
+#con{padding:16px;max-width:720px;margin:0 auto}
+#con h1{color:var(--fic);font-size:26px}
+#con .cciv{display:flex;align-items:center;gap:12px;background:var(--panel);border-radius:16px;padding:12px;margin:8px 0}
+#con .cciv .dot{width:20px;height:20px;border-radius:50%;flex:none}
+#con .cciv .n{flex:1;font-size:19px;font-weight:700}
+#con .cciv .s{font-size:34px;font-weight:800;min-width:2.2ch;text-align:center}
+#con .starsel{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:10px 0}
+#con .starsel button{font-size:22px;font-weight:700}
+#con .feed p{background:var(--panel);border-left:6px solid var(--fic);border-radius:10px;padding:10px 12px;font-size:19px;margin:8px 0}
+#con .feed p.old{opacity:.5;font-size:16px}
+#con.blur .secret{filter:blur(14px)}
+</style>
+</head>
+<body>
+
+<!-- ================= ΡΥΘΜΙΣΗ ================= -->
+<div id="setup">
+  <div class="box">
+    <h1>ΣΚΟΤΕΙΝΟ ΔΑΣΟΣ</h1>
+    <div class="sub">Ένας σκοτεινός γαλαξίας. Κάθε νησίδα είναι ένας πολιτισμός. Κανείς δεν ξέρει πού είναι οι άλλοι, ούτε τι σκέφτονται.</div>
+
+    <div class="line">Πολιτισμοί:
+      <select id="nCivs"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select>
+      &nbsp; Γύροι:
+      <select id="nRounds"><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option></select>
+    </div>
+    <div class="grid" id="civInputs"></div>
+
+    <div class="card">
+      <b>Το Σύμπαν</b> (ο/η εκπαιδευτικός) ξέρει πού κρύβεται κάθε πολιτισμός. Δύο τρόποι:
+      <p style="margin:.5em 0 0">① <b>Post-it:</b> κάθε νησίδα γράφει κρυφά το αστέρι της (2-12) σε post-it και το δίνει διπλωμένο στο Σύμπαν. Όταν χρειάζεται, ο πίνακας ρωτά το Σύμπαν.</p>
+      <p style="margin:.3em 0 0">② <b>Κονσόλα:</b> το Σύμπαν σκανάρει τον κωδικό με το κινητό του. Οι θέσεις και οι ψίθυροι φαίνονται μόνο εκεί, και ο πίνακας λύνει μόνος του τα χτυπήματα.</p>
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button id="btnConsole" class="ghost">Σύνδεση κονσόλας (QR)</button>
+        <span id="conState" class="pill">Κονσόλα: όχι</span>
+      </div>
+      <div id="qrbox" class="hidden" style="margin-top:12px">
+        <div id="qr"></div>
+        <div style="max-width:420px;font-size:16px;color:var(--muted)" id="qrtext"></div>
+      </div>
+    </div>
+
+    <div class="line">
+      <button class="primary" id="btnStart" style="font-size:24px;min-height:64px;padding:0 34px">Έναρξη</button>
+      <button class="ghost" id="btnResume">Συνέχεια αποθηκευμένου παιχνιδιού</button>
+      <button class="ghost" id="btnHow">Οι κανόνες</button>
+      <button class="ghost" id="btnFull">Πλήρης οθόνη</button>
+    </div>
+    <div style="color:#5d6d92;font-size:13px;margin-top:24px" id="licSetup"></div>
+  </div>
+</div>
+
+<!-- ================= ΠΑΙΧΝΙΔΙ ================= -->
+<div id="app" class="hidden">
+  <div id="top">
+    <h1>ΣΚΟΤΕΙΝΟ ΔΑΣΟΣ</h1>
+    <span class="round" id="roundLbl"></span>
+    <span class="pill" id="conPill">Κονσόλα: όχι</span>
+    <span class="sp"></span>
+    <button class="ghost" id="btnHow2">Κανόνες</button>
+    <button class="ghost" id="btnSave">Αποθήκευση χρονικού</button>
+    <button class="ghost" id="btnFull2">⛶</button>
+    <button class="ghost" id="btnMenu">Μενού</button>
+  </div>
+  <div id="civs"></div>
+  <div id="mapwrap">
+    <svg id="map" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet"></svg>
+    <div id="prompt" class="hidden"><span id="promptText"></span><button class="ghost" id="promptCancel">Άκυρο</button></div>
+  </div>
+  <div id="side">
+    <div id="evcard"></div>
+    <div id="log"><h3>Το Χρονικό του Γαλαξία</h3><div id="logBody"></div></div>
+  </div>
+  <div id="act"></div>
+</div>
+
+<!-- ================= ΑΛΛΑΞΕ ΕΝΑΝ ΚΑΝΟΝΑ ================= -->
+<div id="rules" class="hidden">
+  <div style="display:flex;gap:12px;align-items:center">
+    <h1>Αλλάξτε έναν κανόνα του σύμπαντος</h1><span style="flex:1"></span>
+    <button class="ghost" id="rulesBack">Πίσω στον γαλαξία</button>
+  </div>
+  <div class="sub">Κάθε κανόνας του παιχνιδιού είναι επιστήμη, εύλογη υπόθεση ή μυθοπλασία. Διαλέξτε έναν, αλλάξτε τον, και ρωτήστε: τι θα γινόταν τότε;</div>
+  <div class="rg" id="rulesGrid"></div>
+  <div id="ruleBig"></div>
+</div>
+
+<div id="ovRoot"></div>
+<div id="foot"></div>
+
+<!-- ================= ΚΟΝΣΟΛΑ ================= -->
+<div id="con" class="hidden"></div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+"use strict";
+/* ============================================================
+   Σκοτεινό Δάσος · Όμιλος Future Worlds
+   © 2026 Δημήτριος Δαλαγιώργος · CC BY-SA 4.0
+   Ένα αρχείο: πίνακας (προεπιλογή) ή κονσόλα (?universe=<κωδικός>).
+   ============================================================ */
+
+const LICENSE = '© 2026 Δημήτριος Δαλαγιώργος · Όμιλος Future Worlds, ΔΗΜ.Ω.Σ. Ημερήσιο ΓΕΛ Κοζάνης · Άδεια CC BY-SA 4.0 · Εμπνευσμένο από τη θεωρία του «Σκοτεινού Δάσους» του Liu Cixin';
+const CIV_COLORS = ['#38bdf8','#f5b85a','#a78bfa','#34d399','#f472b6','#fb923c'];
+const CIV_NAMES  = ['Κυανοί','Χρυσοί','Ιώδεις','Σμαραγδένιοι','Ρόδινοι','Πορτοκαλί'];
+const CAT = { E:{n:'Επιστήμη',c:'var(--sci)'}, Y:{n:'Εύλογη υπόθεση',c:'var(--hyp)'}, M:{n:'Μυθοπλασία',c:'var(--fic)'} };
+
+// Αστέρια 2-12 (όσα αθροίσματα βγάζουν δύο ζάρια). Θέσεις σε σπείρα.
+const STARS = {2:[150,150],3:[330,95],4:[560,120],5:[805,170],6:[230,355],7:[480,320],8:[720,330],9:[880,470],10:[130,560],11:[390,560],12:[650,575]};
+
+// ---------- κάρτες Γεγονότων ----------
+const EVENTS = [
+  {id:'slow', cat:'E', t:'Αργό φως', e:'Τα σήματα αυτού του γύρου φτάνουν στους άλλους στο τέλος του γύρου: όσοι στέλνουν σήμα φανερώνονται μόνο τότε.',
+   w:'Τα ραδιοκύματα ταξιδεύουν με την ταχύτητα του φωτός. Ως το κοντινότερο αστέρι, τον Εγγύτατο του Κενταύρου, ένα σήμα θέλει πάνω από 4 χρόνια.'},
+  {id:'explosion', cat:'Y', t:'Τεχνολογική έκρηξη', e:'Ο πιο αδύναμος πολιτισμός ρίχνει ζάρι και κερδίζει τόση Τεχνολογία.',
+   w:'Από την πρώτη πτήση αεροπλάνου (1903) ως το πάτημα στη Σελήνη (1969) πέρασαν 66 χρόνια. Ότι κάθε πολιτισμός μπορεί να κάνει ξαφνικά τέτοιο άλμα είναι εύλογη υπόθεση.'},
+  {id:'sophon', cat:'M', t:'Ο κατάσκοπος', e:'Ένας πολιτισμός, στην τύχη, μαθαίνει κρυφά πού κρύβεται ένας άλλος.',
+   w:'Τα «σοφόνια» του Liu Cixin, πρωτόνια που κατασκοπεύουν από έτη φωτός μακριά, είναι μυθοπλασία. Κανένα μέσο δεν μας δείχνει τι γίνεται σε άλλο άστρο τη στιγμή που γίνεται.'},
+  {id:'silence', cat:'E', t:'Η μεγάλη σιωπή', e:'Σε αυτόν τον γύρο η επαφή δεν δίνει Τεχνολογία: τα σήματα δεν απαντιούνται.',
+   w:'Ως σήμερα δεν έχουμε λάβει κανένα επιβεβαιωμένο σήμα από άλλο πολιτισμό. Το «πού είναι όλοι;» του Enrico Fermi (1950) μένει χωρίς απάντηση.'},
+  {id:'arecibo', cat:'E', t:'Το μήνυμα του Αρεσίμπο', e:'Ο πιο προηγμένος πολιτισμός είχε στείλει κάποτε ένα μήνυμα χωρίς να ρωτήσει κανέναν. Η θέση του φανερώνεται.',
+   w:'Το 1974 οι άνθρωποι έστειλαν από το ραδιοτηλεσκόπιο του Αρεσίμπο ένα μήνυμα προς το σμήνος αστεριών M13, περίπου 25.000 έτη φωτός μακριά.'},
+  {id:'supernova', cat:'E', t:'Σουπερνόβα', e:'Δύο ζάρια διαλέγουν ένα αστέρι που εκρήγνυται. Ό,τι ζει εκεί σβήνει.',
+   w:'Τα πολύ μεγάλα αστέρια τελειώνουν τη ζωή τους με έκρηξη σουπερνόβα. Μια κοντινή έκρηξη μπορεί να καταστρέψει τη ζωή στους γύρω πλανήτες.'},
+  {id:'exoplanet', cat:'E', t:'Νέος κόσμος', e:'Οι αστρονόμοι όλων βρίσκουν νέους πλανήτες. Κάθε ζωντανός πολιτισμός κερδίζει +1 Τεχνολογία.',
+   w:'Από το 1995 έχουν επιβεβαιωθεί πάνω από 5.000 πλανήτες γύρω από άλλα αστέρια (εξωπλανήτες).'},
+  {id:'peace', cat:'Y', t:'Πρόταση ειρήνης', e:'Σε αυτόν τον γύρο η επαφή δίνει +5 αντί για +3. Τολμάτε;',
+   w:'Κανείς δεν ξέρει αν μια άλλη νοημοσύνη θα ήταν φιλική ή εχθρική. Και οι δύο εκδοχές είναι υποθέσεις.'},
+  {id:'ftl', cat:'M', t:'Όπλο πιο γρήγορο από το φως', e:'Σε αυτόν τον γύρο το χτύπημα δεν κοστίζει Τεχνολογία και δεν αφήνει ίχνος.',
+   w:'Σύμφωνα με τη θεωρία της σχετικότητας, τίποτα με μάζα δεν μπορεί να φτάσει την ταχύτητα του φωτός. Ένα όπλο ταχύτερο από το φως είναι μυθοπλασία.'},
+  {id:'wormhole', cat:'Y', t:'Σκουληκότρυπα', e:'Σε αυτόν τον γύρο η μετανάστευση δεν κοστίζει Τεχνολογία.',
+   w:'Οι εξισώσεις της γενικής σχετικότητας επιτρέπουν σκουληκότρυπες, «σήραγγες» στον χωροχρόνο. Καμία όμως δεν έχει παρατηρηθεί.'},
+  {id:'seti', cat:'E', t:'Τα αυτιά του SETI', e:'Σε αυτόν τον γύρο η ακρόαση ελέγχει δύο αστέρια αντί για ένα.',
+   w:'Από το 1960 (Frank Drake, πρόγραμμα Ozma) ραδιοτηλεσκόπια ακούν τον ουρανό για σήματα από άλλους πολιτισμούς.'},
+  {id:'storm', cat:'E', t:'Ηλιακή καταιγίδα', e:'Οι επικοινωνίες κόβονται: σε αυτόν τον γύρο κανείς δεν στέλνει σήμα και κανείς δεν ακούει.',
+   w:'Οι ισχυρές ηλιακές καταιγίδες διαταράσσουν τις ραδιοεπικοινωνίες στη Γη. Η μεγαλύτερη γνωστή έγινε το 1859 και έκαψε τηλεγραφικά δίκτυα.'},
+  {id:'immortal', cat:'M', t:'Οι αθάνατοι', e:'Ο πρώτος πολιτισμός που χτυπιέται σε αυτόν τον γύρο δεν σβήνει.',
+   w:'Η μέδουσα Turritopsis dohrnii μπορεί να ξαναγίνει νεαρή («αθάνατη μέδουσα»), αλλά πεθαίνει από θηρευτές και αρρώστιες. Ένας πολιτισμός που δεν μπορεί να χαθεί είναι μυθοπλασία.'},
+];
+
+// ---------- κανόνες για αλλαγή (φάση «Τι θα γινόταν αν…;») ----------
+const RULES = [
+  {cat:'E', r:'Τίποτα δεν ταξιδεύει πιο γρήγορα από το φως.', q:'…μπορούσαμε να μιλήσουμε αμέσως με ανθρώπους σε άλλο άστρο;'},
+  {cat:'E', r:'Όποιος στέλνει σήμα, φανερώνει πού βρίσκεται.', q:'…μπορούσες να μιλήσεις χωρίς να μάθει κανείς πού είσαι;'},
+  {cat:'E', r:'Κανείς δεν μπορεί να διαβάσει τη σκέψη του άλλου.', q:'…οι σκέψεις μας ακούγονταν σε όλους, όπως η φωνή μας;'},
+  {cat:'E', r:'Οι πολιτισμοί, όπως τα είδη, μπορούν να χαθούν.', q:'…δεν υπήρχε θάνατος;'},
+  {cat:'Y', r:'Η τεχνολογία μπορεί να κάνει ξαφνικά άλματα.', q:'…η τεχνολογία σταματούσε για πάντα εκεί που είναι σήμερα;'},
+  {cat:'Y', r:'Κάπου εκεί έξω υπάρχουν κι άλλοι πολιτισμοί.', q:'…ήμασταν σίγουροι ότι είμαστε μόνοι στο σύμπαν;'},
+  {cat:'Y', r:'Ο γαλαξίας είναι σκοτεινό δάσος: όλοι κρύβονται από φόβο.', q:'…κάθε νοημοσύνη στο σύμπαν ήταν από τη φύση της φιλική;'},
+  {cat:'E', r:'Στη Γη μόνο οι άνθρωποι ψάχνουν τ’ αστέρια.', q:'…ένα άλλο ζώο της Γης έστηνε κι αυτό ραδιοτηλεσκόπια;'},
+];
+
+// ---------- βοηθητικά ----------
+const $ = s => document.querySelector(s);
+const el = (tag, attrs={}, html='') => { const e=document.createElement(tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(html) e.innerHTML=html; return e; };
+const rnd = n => 1 + Math.floor(Math.random()*n);
+const shuffle = a => { a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const store = { get(k){ try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;} }, set(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} } };
+function fullscreen(){ try{ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }catch(e){} }
+
+const ICON = {
+  grow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M12 10c0-4 3-6 7-6 0 4-3 6-7 6zM12 13c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>',
+  ear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12a8 8 0 0 1 16 0M7 12a5 5 0 0 1 10 0M10 12a2 2 0 0 1 4 0M12 12v8"/></svg>',
+  sig:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg>',
+  hit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/></svg>',
+  move:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 19L19 5M19 5h-7M19 5v7"/><circle cx="5" cy="19" r="2"/></svg>',
+};
+
+/* ============================================================
+   Δίκτυο: πίνακας ⇄ κονσόλα (PeerJS / WebRTC)
+   ============================================================ */
+const params = new URLSearchParams(location.search);
+const IS_CONSOLE = params.has('universe');
+let peer = null, conn = null;
+
+/* ============================================================
+   ΚΑΤΑΣΤΑΣΗ
+   ============================================================ */
+let S = null;          // κατάσταση παιχνιδιού
+let busy = false;      // όσο τρέχει μια κίνηση
+
+function newState(n, rounds, names){
+  return {
+    phase:'positions', rounds, round:0, turnIdx:0, order:[],
+    civs: Array.from({length:n}, (_,i)=>({name:names[i]||CIV_NAMES[i], color:CIV_COLORS[i], T:0, alive:true, known:null, guess:null, rebirth:false})),
+    pos: Array(n).fill(null),          // κρυφές θέσεις (μόνο από την κονσόλα)
+    deck: shuffle(EVENTS.map(e=>e.id)), event:null, revealed:false,
+    flags:{}, signals:[], pendingReveal:[], ruins:[], log:[], whispers:[],
+  };
+}
+const save = () => store.set('skd-state', S);
+const ev = () => EVENTS.find(e=>e.id===S.event);
+const cur = () => S.order[S.turnIdx];
+const alive = () => S.civs.map((c,i)=>i).filter(i=>S.civs[i].alive);
+function log(t, head=false){ S.log.push((head?'#':'')+t); renderLog(); save(); }
+function consoleOn(){ return !!(conn && conn.open); }
+function allPosKnown(){ return alive().every(i=>S.pos[i]!=null); }
+
+/* ============================================================
+   ΠΙΝΑΚΑΣ: σχεδίαση
+   ============================================================ */
+function drawMap(){
+  const svg = $('#map'); svg.innerHTML='';
+  // αστρόσκονη (σταθερή)
+  let seed=7; const r=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  let dust='';
+  for(let i=0;i<260;i++){ dust+=`<circle cx="${(r()*1000).toFixed(1)}" cy="${(r()*700).toFixed(1)}" r="${(r()*1.6+.3).toFixed(2)}" fill="#fff" opacity="${(r()*.6+.15).toFixed(2)}"/>`; }
+  svg.insertAdjacentHTML('beforeend', `<defs><radialGradient id="glow"><stop offset="0" stop-color="#fff7d6" stop-opacity=".9"/><stop offset="1" stop-color="#fff7d6" stop-opacity="0"/></radialGradient></defs><g>${dust}</g><g id="fx"></g>`);
+  for(const k in STARS){
+    const [x,y]=STARS[k];
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','star'); g.dataset.star=k;
+    g.innerHTML = `<circle class="hit" cx="${x}" cy="${y}" r="46" fill="transparent"/>
+      <circle cx="${x}" cy="${y}" r="30" fill="url(#glow)"/>
+      <circle class="ring" cx="${x}" cy="${y}" r="24" fill="none" stroke="transparent" stroke-width="6"/>
+      <circle class="core" cx="${x}" cy="${y}" r="9"/>
+      <text class="num" x="${x}" y="${y+50}">${k}</text>
+      <text class="who" x="${x}" y="${y-36}" text-anchor="middle" font-size="20" font-weight="700"></text>`;
+    g.addEventListener('pointerup', ()=>onStarTap(+k));
+    svg.appendChild(g);
+  }
+  renderMap();
+}
+function renderMap(){
+  if(!S) return;
+  document.querySelectorAll('#map .star').forEach(g=>{
+    const k=+g.dataset.star;
+    const owner = S.civs.findIndex(c=>c.alive && c.known===k);
+    g.querySelector('.ring').setAttribute('stroke', owner>=0 ? S.civs[owner].color : 'transparent');
+    const w=g.querySelector('.who'); w.textContent = owner>=0 ? S.civs[owner].name : ''; w.setAttribute('fill', owner>=0?S.civs[owner].color:'#fff');
+    g.classList.toggle('ruin', S.ruins.includes(k) && owner<0);
+  });
+}
+function fxRings(star, color){
+  const [x,y]=STARS[star]; const fx=$('#fx');
+  for(let i=0;i<3;i++){
+    const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',20);c.setAttribute('fill','none');c.setAttribute('stroke',color);c.setAttribute('stroke-width',4);
+    c.innerHTML=`<animate attributeName="r" from="20" to="330" dur="2.4s" begin="${i*.5}s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="2.4s" begin="${i*.5}s" fill="freeze"/>`;
+    fx.appendChild(c); setTimeout(()=>c.remove(),3800);
+  }
+}
+function fxBlast(star){
+  const [x,y]=STARS[star]; const fx=$('#fx');
+  const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',10);c.setAttribute('fill','#fff');
+  c.innerHTML=`<animate attributeName="r" from="10" to="160" dur="1.1s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="1.1s" fill="freeze"/>`;
+  fx.appendChild(c); setTimeout(()=>c.remove(),1400);
+  const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+  l.setAttribute('x1',x);l.setAttribute('y1',-20);l.setAttribute('x2',x);l.setAttribute('y2',y);l.setAttribute('stroke','#f87171');l.setAttribute('stroke-width',5);
+  l.innerHTML=`<animate attributeName="opacity" from="1" to="0" dur=".9s" fill="freeze"/>`;
+  fx.appendChild(l); setTimeout(()=>l.remove(),1000);
+}
+
+function renderCivs(){
+  const box=$('#civs'); box.innerHTML='';
+  S.civs.forEach((c,i)=>{
+    const d=el('div',{class:'civ'+(S.phase==='turns'&&cur()===i?' current':'')+(c.alive?'':' dead'),style:`--c:${c.color}`});
+    let st = !c.alive ? 'Σβησμένος: ξαναγεννιέται στη σειρά του' : (c.known ? `Φανερός στο αστέρι ${c.known}` : 'Κρυμμένος στο σκοτάδι');
+    d.innerHTML = `<div class="nm"><span class="dot"></span>${esc(c.name)}</div>
+      <div class="row"><span class="tech">${c.T}</span><span class="lbl">Τεχνολογία</span><span style="flex:1"></span>
+      <button class="adj" data-a="-1">−</button><button class="adj" data-a="1">+</button></div>
+      <div class="st">${st}</div>`;
+    d.querySelectorAll('.adj').forEach(b=>b.onclick=()=>{ c.T=Math.max(0,c.T+ +b.dataset.a); renderAll(); });
+    box.appendChild(d);
+  });
+}
+function renderLog(){
+  const b=$('#logBody'); if(!b||!S) return;
+  b.innerHTML = S.log.map(t=> t.startsWith('#') ? `<p class="rh">${esc(t.slice(1))}</p>` : `<p>${esc(t)}</p>`).join('');
+  const L=$('#log'); L.scrollTop=L.scrollHeight;
+}
+function renderEvent(){
+  const box=$('#evcard');
+  const e=ev();
+  if(!e){ box.style.borderColor='var(--line)'; box.innerHTML=`<div class="lbl" style="color:var(--muted)">Κάρτα Γεγονότος</div><h3>—</h3><div class="eff">Στην αρχή κάθε γύρου γυρίζει μία κάρτα.</div>`; return; }
+  if(!S.revealed){
+    box.style.borderColor='var(--line)';
+    box.innerHTML=`<span class="cat" style="background:#56658a;color:#fff">Επιστήμη, υπόθεση ή μυθοπλασία;</span>
+      <h3>${esc(e.t)}</h3><div class="eff">${esc(e.e)}</div>
+      <div class="truth">Κάθε πολιτισμός μαντεύει. Όποιος βρει την κατηγορία κερδίζει +1 Τεχνολογία.</div>
+      <div id="guess" style="margin-top:10px"></div>`;
+    const g=box.querySelector('#guess');
+    alive().forEach(i=>{
+      const c=S.civs[i]; const r=el('div',{class:'g'});
+      r.innerHTML=`<span class="dot" style="background:${c.color}"></span><span>${esc(c.name)}</span>`;
+      ['E','Y','M'].forEach(k=>{
+        const b=el('button',{},k==='E'?'Ε':k==='Y'?'Υ':'Μ');
+        if(c.guess===k){ b.classList.add('on'); b.style.background=CAT[k].c; }
+        b.onclick=()=>{ c.guess = c.guess===k?null:k; renderEvent(); save(); };
+        r.appendChild(b);
+      });
+      g.appendChild(r);
+    });
+  } else {
+    box.style.borderColor=CAT[e.cat].c;
+    box.innerHTML=`<span class="cat" style="background:${CAT[e.cat].c}">${CAT[e.cat].n}</span>
+      <h3>${esc(e.t)}</h3><div class="eff">${esc(e.e)}</div><div class="truth"><b>Τι ισχύει;</b> ${esc(e.w)}</div>`;
+  }
+}
+function renderAct(){
+  const a=$('#act'); a.innerHTML='';
+  if(S.phase==='event' && !S.revealed){
+    const b=el('button',{class:'primary big'},'Αποκάλυψη κατηγορίας'); b.onclick=revealEvent; a.appendChild(el('div',{style:'flex:1'})); a.appendChild(b); return;
+  }
+  if(S.phase==='end'){
+    const b1=el('button',{class:'primary big'},'Αλλάξτε έναν κανόνα →'); b1.onclick=()=>showRules();
+    a.appendChild(el('div',{style:'flex:1;display:flex;align-items:center;font-size:22px;color:var(--muted)'},'Τέλος. Ο γαλαξίας σωπαίνει.')); a.appendChild(b1); return;
+  }
+  if(S.phase!=='turns' || S.civs[cur()]==null) return;
+  const i=cur(), c=S.civs[i], f=S.flags;
+  const who=el('div',{class:'who',style:`--c:${c.color}`}); who.innerHTML=`<b style="color:${c.color}">${esc(c.name)}</b><small>Σειρά ${S.turnIdx+1} από ${S.order.length}</small>`;
+  a.appendChild(who);
+  const acts=el('div',{class:'acts'});
+  if(c.rebirth){
+    const b=el('button',{},`${ICON.grow}Ξαναγεννιέται<small>νέο κρυφό αστέρι, 0 Τ</small>`); b.onclick=()=>run(()=>actRebirth(i)); acts.appendChild(b);
+  } else {
+    const strikeCost=f.ftl?0:3, moveCost=f.wormhole?0:2;
+    const defs=[
+      ['grow','Ανάπτυξη','ζάρι: 1-3 → +1 · 4-6 → +2',true,()=>actGrow(i)],
+      ['ear','Ακρόαση', f.seti?'δύο αστέρια · απαντά το Σύμπαν':'ένα αστέρι · απαντά το Σύμπαν', !f.storm, ()=>actListen(i)],
+      ['sig','Σήμα','+2 Τ · όλοι μαθαίνουν πού είσαι', !f.storm, ()=>actSignal(i)],
+      ['hit','Χτύπημα',`κοστίζει ${strikeCost} Τ · αφήνει ίχνος;`, c.T>=strikeCost, ()=>actStrike(i)],
+      ['move','Μετανάστευση',`κοστίζει ${moveCost} Τ · χάνεσαι ξανά`, c.T>=moveCost, ()=>actMove(i)],
+    ];
+    defs.forEach(([ic,t,s,ok,fn])=>{ const b=el('button',{},`${ICON[ic]}${t}<small>${s}</small>`); b.disabled=!ok; b.onclick=()=>run(fn); acts.appendChild(b); });
+  }
+  a.appendChild(acts);
+}
+function renderTop(){
+  $('#roundLbl').textContent = S.round ? `Γύρος ${S.round} από ${S.rounds}` : '';
+  const p=$('#conPill'); p.textContent = consoleOn() ? 'Κονσόλα: συνδεδεμένη' : 'Κονσόλα: όχι (post-it)'; p.classList.toggle('on',consoleOn());
+}
+function renderAll(){ if(!S) return; renderTop(); renderCivs(); renderMap(); renderEvent(); renderAct(); renderLog(); save(); sendState(); }
+
+/* ============================================================
+   Επικαλύψεις: ερώτηση, ζάρια, επιλογή αστεριού
+   ============================================================ */
+function modal(title, text, buttons, opts={}){
+  return new Promise(res=>{
+    const ov=el('div',{class:'ov'}); const m=el('div',{class:'modal'+(opts.universe?' universe':'')});
+    m.innerHTML=`<h2>${title}</h2>${text}`;
+    const bs=el('div',{class:'btns'});
+    buttons.forEach(([lbl,val,style])=>{ const b=el('button',{style:style||''},lbl); if(val==='__primary') b.classList.add('primary'); b.onclick=()=>{ov.remove();res(val);}; bs.appendChild(b); });
+    m.appendChild(bs); ov.appendChild(m); $('#ovRoot').appendChild(ov);
+  });
+}
+const info = (title, html, opts) => modal(title, html, [['Συνέχεια','__primary']], opts);
+const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+function dieHTML(v){ return `<div class="die">${Array.from({length:9},(_,k)=>`<i style="visibility:${PIPS[v].includes(k)?'visible':'hidden'}"></i>`).join('')}</div>`; }
+function rollDice(n, label){
+  return new Promise(res=>{
+    const ov=el('div',{class:'ov'}); const m=el('div',{class:'modal',style:'text-align:center;min-width:420px'});
+    m.innerHTML=`<h2>${label}</h2><div class="dice">${Array.from({length:n},()=>dieHTML(rnd(6))).join('')}</div><div class="diceres"></div>`;
+    const bs=el('div',{class:'btns',style:'justify-content:center'}); const go=el('button',{class:'primary'},'Ρίξε τα ζάρια!'); bs.appendChild(go); m.appendChild(bs);
+    ov.appendChild(m); $('#ovRoot').appendChild(ov);
+    go.onclick=async()=>{
+      go.disabled=true; const vals=Array.from({length:n},()=>rnd(6));
+      const box=m.querySelector('.dice');
+      for(let t=0;t<12;t++){ box.innerHTML=Array.from({length:n},()=>dieHTML(rnd(6))).join(''); box.querySelectorAll('.die').forEach(d=>d.classList.add('roll')); await sleep(70); }
+      box.innerHTML=vals.map(dieHTML).join('');
+      const sum=vals.reduce((a,b)=>a+b,0);
+      m.querySelector('.diceres').textContent = n>1 ? `${vals.join(' + ')} = ${sum}` : `${sum}`;
+      go.textContent='Συνέχεια'; go.disabled=false; go.onclick=()=>{ov.remove();res(sum);};
+    };
+  });
+}
+let starPick=null;
+function pickStar(text, allowed){
+  return new Promise(res=>{
+    starPick={res, allowed:allowed||Object.keys(STARS).map(Number)};
+    document.querySelectorAll('#map .star').forEach(g=>g.classList.toggle('pick', starPick.allowed.includes(+g.dataset.star)));
+    $('#promptText').textContent=text; $('#prompt').classList.remove('hidden');
+  });
+}
+function endPick(val){
+  if(!starPick) return; const r=starPick.res; starPick=null;
+  document.querySelectorAll('#map .star').forEach(g=>g.classList.remove('pick'));
+  $('#prompt').classList.add('hidden'); r(val);
+}
+function onStarTap(k){ if(starPick && starPick.allowed.includes(k)) endPick(k); }
+$('#promptCancel').onclick=()=>endPick(null);
+
+// Ρωτά το Σύμπαν (στον πίνακα) ή απαντά μόνο του αν οι θέσεις είναι γνωστές.
+async function whoAt(star, exclude=-1){
+  const k = S.civs.findIndex((c,i)=>c.alive && c.known===star && i!==exclude);
+  if(k>=0) return k;
+  if(consoleOn() && allPosKnown()) { const j=S.pos.findIndex((p,i)=>p===star && S.civs[i].alive && i!==exclude); return j; }
+  const opts = alive().filter(i=>i!==exclude).map(i=>[esc(S.civs[i].name),i,`background:${S.civs[i].color};color:#06101f;font-weight:700`]);
+  opts.push(['Κανείς','none']);
+  const v = await modal('Το Σύμπαν αποφασίζει',`<p>Δες τα post-it: ζει κάποιος στο αστέρι <b>${star}</b>;</p>`, opts, {universe:true});
+  return v==='none' ? -1 : v;
+}
+// Φανερώνει έναν πολιτισμό: αν η θέση του δεν είναι γνωστή, τη δείχνει η ίδια η νησίδα.
+async function reveal(i, why){
+  const c=S.civs[i];
+  let star = S.pos[i];
+  if(star==null){ star = await pickStar(`${c.name}: ${why} Δείξτε το αστέρι σας.`); if(star==null) return null; S.pos[i]=star; }
+  c.known=star; fxRings(star,c.color); renderAll(); return star;
+}
+function whisper(t){ S.whispers.push(t); sendState(); }
+
+/* ============================================================
+   Ροή του παιχνιδιού
+   ============================================================ */
+async function run(fn){ if(busy) return; busy=true; let r; try{ r=await fn(); } finally { busy=false; } if(r===false){ renderAll(); return; } nextTurn(); }
+
+async function startRound(){
+  S.round++; S.flags={}; S.signals=[]; S.pendingReveal=[]; S.whispers=[];
+  S.civs.forEach(c=>c.guess=null);
+  if(!S.deck.length) S.deck=shuffle(EVENTS.map(e=>e.id));
+  S.event=S.deck.shift(); S.revealed=false; S.phase='event';
+  const n=S.civs.length, first=(S.round-1)%n;
+  S.order=Array.from({length:n},(_,k)=>(first+k)%n); S.turnIdx=0;
+  log(`Γύρος ${S.round}`, true);
+  renderAll(); $('#evcard').classList.remove('flip'); void $('#evcard').offsetWidth; $('#evcard').classList.add('flip');
+}
+async function revealEvent(){
+  if(busy) return; busy=true;
+  const e=ev(); S.revealed=true;
+  const won=alive().filter(i=>S.civs[i].guess===e.cat);
+  won.forEach(i=>S.civs[i].T+=1);
+  log(`Κάρτα: «${e.t}» (${CAT[e.cat].n}).` + (won.length?` Τη μάντεψαν: ${won.map(i=>S.civs[i].name).join(', ')} (+1).`:''));
+  renderAll();
+  try{ await applyEvent(e); } finally { busy=false; }
+  S.phase='turns'; S.turnIdx=-1; nextTurn();
+}
+async function applyEvent(e){
+  const f=S.flags, A=alive();
+  switch(e.id){
+    case 'slow': f.slow=true; break;
+    case 'silence': f.silence=true; break;
+    case 'peace': f.peace=true; break;
+    case 'ftl': f.ftl=true; break;
+    case 'wormhole': f.wormhole=true; break;
+    case 'seti': f.seti=true; break;
+    case 'storm': f.storm=true; break;
+    case 'immortal': f.immortal=true; break;
+    case 'exoplanet': A.forEach(i=>S.civs[i].T++); log('Νέοι κόσμοι: κάθε πολιτισμός +1.'); break;
+    case 'explosion': {
+      const min=Math.min(...A.map(i=>S.civs[i].T)); const weak=shuffle(A.filter(i=>S.civs[i].T===min))[0];
+      const v=await rollDice(1,`Τεχνολογική έκρηξη: ${esc(S.civs[weak].name)}`);
+      S.civs[weak].T+=v; log(`${S.civs[weak].name}: τεχνολογική έκρηξη, +${v}. Ο πιο αδύναμος δεν είναι πια αδύναμος.`); break;
+    }
+    case 'arecibo': {
+      const max=Math.max(...A.map(i=>S.civs[i].T));
+      if(A.filter(i=>S.civs[i].T===max).every(i=>S.civs[i].known)) log('Το παλιό μήνυμα έφτασε, αλλά ο αποστολέας του φαινόταν ήδη.');
+      for(const i of A.filter(i=>S.civs[i].T===max && !S.civs[i].known)){ const s=await reveal(i,'το παλιό σας μήνυμα έφτασε.'); if(s) log(`Ένα παλιό μήνυμα φανερώνει τους ${S.civs[i].name} στο αστέρι ${s}.`); }
+      break;
+    }
+    case 'supernova': {
+      const star=await rollDice(2,'Σουπερνόβα: ποιο αστέρι εκρήγνυται;');
+      fxBlast(star); await sleep(500);
+      const v=await whoAt(star);
+      if(v>=0){ destroy(v,star); log(`Το αστέρι ${star} εξερράγη. Οι ${S.civs[v].name} χάθηκαν μαζί του.`); }
+      else { if(!S.ruins.includes(star)) S.ruins.push(star); log(`Το αστέρι ${star} εξερράγη. Δεν ζούσε κανείς εκεί.`); }
+      renderAll(); break;
+    }
+    case 'sophon': {
+      if(A.length<2) break;
+      const [spy,target]=shuffle(A);
+      const tp=S.civs[target].known ?? S.pos[target];
+      if(consoleOn() && tp!=null){
+        whisper(`Κατάσκοπος: πες κρυφά στους ${S.civs[spy].name} ότι οι ${S.civs[target].name} είναι στο αστέρι ${tp}.`);
+        await info('Ο κατάσκοπος',`<p>Οι <b style="color:${S.civs[spy].color}">${esc(S.civs[spy].name)}</b> αποκτούν κατάσκοπο. Το Σύμπαν θα τους ψιθυρίσει μια θέση.</p>`);
+      } else {
+        await info('Το Σύμπαν ψιθυρίζει',`<p>Πες κρυφά στους <b style="color:${S.civs[spy].color}">${esc(S.civs[spy].name)}</b> πού κρύβονται οι <b style="color:${S.civs[target].color}">${esc(S.civs[target].name)}</b> (κοίτα το post-it).</p>`,{universe:true});
+      }
+      log(`Οι ${S.civs[spy].name} απέκτησαν κατάσκοπο. Κάτι ξέρουν τώρα.`); break;
+    }
+  }
+  renderAll();
+}
+function destroy(i, star){
+  const c=S.civs[i]; c.alive=false; c.T=0; c.known=null; S.pos[i]=null; c.rebirth=true;
+  if(!S.ruins.includes(star)) S.ruins.push(star);
+  fxBlast(star);
+}
+async function nextTurn(){
+  if(S.phase!=='turns'){ renderAll(); return; }
+  S.turnIdx++;
+  if(S.turnIdx>=S.order.length){ await endRound(); return; }
+  const i=cur(); const c=S.civs[i];
+  if(!c.alive){ c.rebirth=true; }
+  renderAll();
+}
+async function endRound(){
+  S.phase='roundEnd';
+  const f=S.flags;
+  for(const [i,star] of S.pendingReveal){ if(S.civs[i].alive){ S.civs[i].known=star; fxRings(star,S.civs[i].color); log(`Το αργό φως έφτασε: οι ${S.civs[i].name} φαίνονται στο αστέρι ${star}.`); } }
+  const sig=S.signals.filter(i=>S.civs[i].alive);
+  if(sig.length>=2){
+    if(f.silence) log('Τα σήματα διασταυρώθηκαν, αλλά κανείς δεν απάντησε. Η μεγάλη σιωπή.');
+    else { const b=f.peace?5:3; sig.forEach(i=>S.civs[i].T+=b); log(`Επαφή! ${sig.map(i=>S.civs[i].name).join(' και ')} ακούστηκαν: +${b} ο καθένας.`); }
+  }
+  renderAll();
+  if(S.round>=S.rounds){ await endGame(); return; }
+  await info(`Τέλος του γύρου ${S.round}`, `<p>Ο γαλαξίας περιμένει. Οι νησίδες έχουν λίγο χρόνο να μιλήσουν μεταξύ τους.</p>`);
+  await startRound();
+}
+async function endGame(){
+  S.phase='end';
+  const rank=S.civs.map((c,i)=>i).sort((a,b)=>S.civs[b].T-S.civs[a].T);
+  log('Τέλος', true);
+  log(`Ο γαλαξίας σωπαίνει. Πρώτοι οι ${S.civs[rank[0]].name} με ${S.civs[rank[0]].T} Τεχνολογία.`);
+  renderAll();
+  await info('Ο γαλαξίας σωπαίνει', `<p>${rank.map((i,k)=>`${k+1}. <b style="color:${S.civs[i].color}">${esc(S.civs[i].name)}</b>: ${S.civs[i].T} Τ`).join('<br>')}</p>
+    <p style="color:var(--muted)">Ποιος έστειλε σήμα; Ποιος χτύπησε πρώτος; Γιατί;</p>`);
+}
+
+/* ---------- κινήσεις ---------- */
+async function actGrow(i){
+  const v=await rollDice(1,`${esc(S.civs[i].name)}: ανάπτυξη`); const g=v>=4?2:1;
+  S.civs[i].T+=g; log(`Οι ${S.civs[i].name} αναπτύσσονται σιωπηλά (+${g}).`);
+}
+async function actListen(i){
+  const c=S.civs[i]; const n=S.flags.seti?2:1; const heard=[];
+  for(let k=0;k<n;k++){
+    const s=await pickStar(`${c.name}: ποιο αστέρι ακούτε;${n>1?` (${k+1}/${n})`:''}`); if(s==null) return false;
+    heard.push(s);
+  }
+  if(consoleOn() && allPosKnown()){
+    heard.forEach(s=>{ const j=S.pos.findIndex((p,x)=>p===s && S.civs[x].alive && x!==i); whisper(`Ακρόαση των ${c.name} στο ${s}: ${j>=0?'ΖΩΗ':'σιωπή'}.`); });
+    await info('Ακρόαση',`<p>Οι <b style="color:${c.color}">${esc(c.name)}</b> στρέφουν τις κεραίες στο ${heard.join(' και ')}. Το Σύμπαν θα τους ψιθυρίσει τι άκουσαν.</p>`);
+  } else {
+    await info('Το Σύμπαν ψιθυρίζει',`<p>Πες κρυφά στους <b style="color:${c.color}">${esc(c.name)}</b> αν ζει κάτι στο αστέρι ${heard.join(' και στο ')} (μόνο «ζωή» ή «σιωπή», όχι ποιος).</p>`,{universe:true});
+  }
+  log(`Οι ${c.name} ακούν τον ουρανό.`);
+}
+async function actSignal(i){
+  const c=S.civs[i];
+  let star=c.known ?? S.pos[i];
+  if(star==null){ star=await pickStar(`${c.name}: από ποιο αστέρι στέλνετε σήμα;`); if(star==null) return false; S.pos[i]=star; }
+  c.T+=2; S.signals.push(i);
+  if(S.flags.slow){ S.pendingReveal.push([i,star]); log(`Οι ${c.name} στέλνουν σήμα. Το φως του θα φτάσει στο τέλος του γύρου.`); }
+  else { c.known=star; fxRings(star,c.color); log(`Οι ${c.name} στέλνουν σήμα από το αστέρι ${star}. Όλος ο γαλαξίας τους ακούει.`); }
+}
+async function actStrike(i){
+  const c=S.civs[i];
+  const own=c.known ?? S.pos[i];
+  const allowed=Object.keys(STARS).map(Number).filter(k=>k!==own);
+  const star=await pickStar(`${c.name}: ποιο αστέρι χτυπάτε;`, allowed); if(star==null) return false;
+  c.T-= S.flags.ftl?0:3;
+  fxBlast(star); await sleep(600);
+  const v=await whoAt(star, i);
+  if(v>=0){
+    if(S.flags.immortal && !S.flags.immortalUsed){ S.flags.immortalUsed=true; log(`Οι ${c.name} χτυπούν το αστέρι ${star}. Οι ${S.civs[v].name} δεν σβήνουν: είναι αθάνατοι, γι' αυτόν τον γύρο.`);}
+    else { destroy(v,star); log(`Οι ${c.name} χτυπούν το αστέρι ${star}. Ένα φως σβήνει: οι ${S.civs[v].name} χάθηκαν.`); }
+  } else log(`Οι ${c.name} χτυπούν το αστέρι ${star}. Το χτύπημα χάνεται στο κενό.`);
+  renderAll();
+  if(S.flags.ftl) return;
+  if(c.known){ return; }
+  const d=await rollDice(1,`Άφησε ίχνος το χτύπημα; (1-3 ναι)`);
+  if(d<=3){ const s=await reveal(i,'το χτύπημά σας άφησε ίχνος.'); if(s) log(`Το ίχνος οδηγεί πίσω: οι ${c.name} φαίνονται στο αστέρι ${s}.`); }
+  else log('Το χτύπημα δεν άφησε ίχνος.');
+}
+async function actMove(i){
+  const c=S.civs[i]; c.T-= S.flags.wormhole?0:2; c.known=null; S.pos[i]=null;
+  if(consoleOn()) whisper(`Οι ${c.name} μεταναστεύουν: γράψε στην κονσόλα το νέο τους αστέρι.`);
+  await info('Μετανάστευση',`<p>Οι <b style="color:${c.color}">${esc(c.name)}</b> χάνονται ξανά στο σκοτάδι. Γράψτε το νέο σας αστέρι σε post-it και δώστε το στο Σύμπαν.</p>`);
+  log(`Οι ${c.name} μετανάστευσαν. Κανείς δεν ξέρει πού.`);
+}
+async function actRebirth(i){
+  const c=S.civs[i]; c.alive=true; c.rebirth=false; c.T=0; c.known=null; S.pos[i]=null;
+  if(consoleOn()) whisper(`Οι ${c.name} ξαναγεννιούνται: γράψε στην κονσόλα το νέο τους αστέρι.`);
+  await info('Ένας νέος πολιτισμός',`<p>Σε άλλο αστέρι, ένα νέο είδος σηκώνει τα μάτια στον ουρανό. Οι <b style="color:${c.color}">${esc(c.name)}</b> ξεκινούν από την αρχή. Νέο αστέρι σε post-it για το Σύμπαν.</p>`);
+  log(`Ένα νέο είδος γεννιέται κάπου στο σκοτάδι: οι ${c.name}, από την αρχή.`);
+}
+
+/* ============================================================
+   «Αλλάξτε έναν κανόνα»
+   ============================================================ */
+function showRules(){
+  $('#rules').classList.remove('hidden');
+  const g=$('#rulesGrid'); g.innerHTML='';
+  RULES.forEach((r,k)=>{
+    const d=el('div',{class:'rc',style:`--k:${CAT[r.cat].c}`});
+    d.innerHTML=`<span class="cat pill" style="background:${CAT[r.cat].c};color:#06101f">${CAT[r.cat].n}</span><b>${esc(r.r)}</b><small>Πατήστε για να τον αλλάξετε</small>`;
+    d.onclick=()=>{
+      $('#ruleBig').innerHTML=`<div class="big" style="--k:${CAT[r.cat].c}">
+        <div class="t1">Στον κόσμο μας ισχύει: <b>${esc(r.r)}</b> <span class="pill" style="background:${CAT[r.cat].c};color:#06101f">${CAT[r.cat].n}</span></div>
+        <div class="t2">Τι θα γινόταν αν ${esc(r.q.replace(/^…/,''))}</div>
+        <div class="t3">Και τώρα εσείς: ο καθένας γράφει σε post-it το δικό του «Τι θα γινόταν αν…;». Ποιο κομμάτι είναι αληθινό (Ε), ποιο εύλογη υπόθεση (Υ), ποιο μυθοπλασία (Μ);</div></div>`;
+      $('#ruleBig').scrollIntoView({behavior:'smooth'});
+    };
+    g.appendChild(d);
+  });
+}
+$('#rulesBack').onclick=()=>$('#rules').classList.add('hidden');
+
+/* ============================================================
+   Κανόνες (βοήθεια)
+   ============================================================ */
+function howTo(){
+  info('Οι κανόνες',`
+  <p><b>Σκοπός:</b> να επιβιώσετε και να έχετε την περισσότερη Τεχνολογία (Τ) στο τέλος.</p>
+  <p><b>Αρχή:</b> κάθε πολιτισμός διαλέγει κρυφά ένα αστέρι (2-12) και το λέει μόνο στο Σύμπαν.</p>
+  <p><b>Κάθε γύρος:</b> γυρίζει μια κάρτα Γεγονότος. Κάθε πολιτισμός μαντεύει αν είναι επιστήμη (Ε), εύλογη υπόθεση (Υ) ή μυθοπλασία (Μ): όποιος βρει, +1 Τ. Μετά, με τη σειρά, κάθε πολιτισμός κάνει μία κίνηση:</p>
+  <p>• <b>Ανάπτυξη:</b> ζάρι, 1-3 → +1 Τ, 4-6 → +2 Τ.<br>
+     • <b>Ακρόαση:</b> δείχνετε ένα αστέρι και το Σύμπαν σάς ψιθυρίζει «ζωή» ή «σιωπή».<br>
+     • <b>Σήμα:</b> +2 Τ, αλλά όλοι μαθαίνουν πού είστε. Αν στείλουν σήμα δύο πολιτισμοί στον ίδιο γύρο, γίνεται επαφή: +3 ο καθένας.<br>
+     • <b>Χτύπημα:</b> κοστίζει 3 Τ. Ό,τι ζει στο αστέρι σβήνει. Ζάρι: με 1-3 το ίχνος φανερώνει κι εσάς.<br>
+     • <b>Μετανάστευση:</b> κοστίζει 2 Τ. Πάτε κρυφά σε νέο αστέρι.</p>
+  <p><b>Όποιος σβήνει</b> ξαναγεννιέται στη σειρά του, σε νέο κρυφό αστέρι, με 0 Τ.</p>`);
+}
+
+/* ============================================================
+   Αποθήκευση χρονικού
+   ============================================================ */
+function saveChronicle(){
+  const txt='ΣΚΟΤΕΙΝΟ ΔΑΣΟΣ · Το Χρονικό του Γαλαξία\n'+new Date().toLocaleString('el-GR')+'\n\n'+S.log.map(t=>t.startsWith('#')?'\n== '+t.slice(1)+' ==':t).join('\n')+'\n\n'+LICENSE+'\n';
+  const a=el('a',{href:URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'})),download:'Χρονικό_Σκοτεινό_Δάσος.txt'});
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ============================================================
+   Δίκτυο: πίνακας
+   ============================================================ */
+function boardId(){ let id=store.get('skd-id'); if(!id){ id='fw-skd-'+Math.random().toString(36).slice(2,8); store.set('skd-id',id); } return id; }
+function initPeer(){
+  if(peer || typeof Peer==='undefined') return !!peer;
+  peer=new Peer(boardId());
+  peer.on('error',err=>{ if(err.type==='unavailable-id'){ store.set('skd-id',null); peer.destroy(); peer=null; initPeer(); } else console.warn(err); });
+  peer.on('connection',c=>{
+    conn=c;
+    c.on('open',()=>{ updConState(); sendState(); });
+    c.on('data',d=>{
+      if(d && d.type==='setPos' && S){ S.pos[d.civ]=d.star; save(); sendState(); }
+    });
+    c.on('close',()=>{ conn=null; updConState(); });
+  });
+  return true;
+}
+function updConState(){ const on=consoleOn(); const p=$('#conState'); if(p){ p.textContent=on?'Κονσόλα: συνδεδεμένη':'Κονσόλα: όχι'; p.classList.toggle('on',on);} if(S) renderTop(); }
+function sendState(){
+  if(!consoleOn()) return;
+  const civs = S ? S.civs.map(c=>({name:c.name,color:c.color,alive:c.alive,known:c.known,T:c.T})) : setupCivs().map(c=>({name:c.name,color:c.color,alive:true,known:null,T:0}));
+  conn.send({type:'state', civs, pos:S?S.pos:Array(civs.length).fill(null), whispers:S?S.whispers:[], round:S?S.round:0});
+}
+function showQR(){
+  $('#qrbox').classList.remove('hidden');
+  if(location.protocol==='file:'){ $('#qrtext').innerHTML='Η κονσόλα θέλει τη σελίδα από το διαδίκτυο (GitHub Pages), όχι από αρχείο. Παίξτε με post-it.'; return; }
+  if(!initPeer()){ $('#qrtext').textContent='Δεν φορτώθηκε η βιβλιοθήκη σύνδεσης (internet;). Παίξτε με post-it.'; return; }
+  const url=location.origin+location.pathname+'?universe='+boardId();
+  $('#qr').innerHTML=''; try{ new QRCode($('#qr'),{text:url,width:200,height:200}); }catch(e){}
+  $('#qrtext').innerHTML=`Σκάναρε με το κινητό του Σύμπαντος.<br><small style="word-break:break-all">${esc(url)}</small><br>Δεν δείχνεις την κονσόλα στην τάξη.`;
+}
+
+/* ============================================================
+   Ρύθμιση
+   ============================================================ */
+function setupCivs(){
+  const n=+$('#nCivs').value; const ins=[...document.querySelectorAll('#civInputs input')];
+  return Array.from({length:n},(_,i)=>({name:(ins[i]&&ins[i].value.trim())||CIV_NAMES[i], color:CIV_COLORS[i]}));
+}
+function renderSetupCivs(){
+  const n=+$('#nCivs').value, box=$('#civInputs'); const old=[...box.querySelectorAll('input')].map(x=>x.value);
+  box.innerHTML='';
+  for(let i=0;i<n;i++){ const d=el('div',{class:'civin'}); d.innerHTML=`<span class="dot" style="background:${CIV_COLORS[i]}"></span><input maxlength="18" value="${esc(old[i]||CIV_NAMES[i])}">`; box.appendChild(d); }
+  sendState();
+}
+async function startGame(){
+  const civs=setupCivs();
+  S=newState(civs.length, +$('#nRounds').value, civs.map(c=>c.name));
+  $('#setup').classList.add('hidden'); $('#app').classList.remove('hidden');
+  drawMap(); renderAll();
+  log('Ο γαλαξίας είναι σκοτεινός. Κάπου μέσα του κρύβονται '+S.civs.map(c=>'οι '+c.name).join(', ')+'.');
+  await info('Κρυφτείτε', consoleOn()
+    ? `<p>Κάθε πολιτισμός διαλέγει κρυφά ένα αστέρι από το 2 ως το 12 και το λέει ψιθυριστά στο Σύμπαν, που το περνά στην κονσόλα.</p>`
+    : `<p>Κάθε πολιτισμός διαλέγει κρυφά ένα αστέρι από το 2 ως το 12, το γράφει σε post-it μαζί με το όνομά του και το δίνει διπλωμένο στο Σύμπαν.</p><p style="color:var(--muted)">Δύο πολιτισμοί δεν μπορούν να είναι στο ίδιο αστέρι: το Σύμπαν ελέγχει.</p>`);
+  await startRound();
+}
+function resumeGame(){
+  const s=store.get('skd-state'); if(!s){ info('Δεν βρέθηκε','<p>Δεν υπάρχει αποθηκευμένο παιχνίδι σε αυτόν τον υπολογιστή.</p>'); return; }
+  S=s; $('#setup').classList.add('hidden'); $('#app').classList.remove('hidden'); drawMap();
+  if(S.phase==='turns' && S.turnIdx>=S.order.length) S.turnIdx=S.order.length-1;
+  if(S.phase==='event' && S.revealed){ S.phase='turns'; S.turnIdx=Math.max(0,S.turnIdx); }
+  renderAll();
+  if(S.phase==='roundEnd'){ if(S.round>=S.rounds) endGame(); else startRound(); }
+}
+async function menu(){
+  const v=await modal('Μενού','<p>Τι θέλετε;</p>',[['Αλλάξτε έναν κανόνα','rules'],['Τέλος παιχνιδιού τώρα','end'],['Νέο παιχνίδι','new'],['Άκυρο','x']]);
+  if(v==='rules') showRules();
+  if(v==='end' && S.phase!=='end'){ await endGame(); }
+  if(v==='new'){ const ok=await modal('Νέο παιχνίδι;','<p>Το τρέχον παιχνίδι θα χαθεί. Αποθηκεύσατε το χρονικό;</p>',[['Ναι, νέο','y'],['Όχι','n']]); if(ok==='y'){ store.set('skd-state',null); location.reload(); } }
+}
+
+/* ============================================================
+   ΚΟΝΣΟΛΑ (κινητό του Σύμπαντος)
+   ============================================================ */
+function initConsole(){
+  document.body.classList.add('console');
+  ['#setup','#app','#rules','#foot'].forEach(s=>$(s).classList.add('hidden'));
+  const C=$('#con'); C.classList.remove('hidden');
+  C.innerHTML=`<h1>Κονσόλα του Σύμπαντος</h1><p id="cst" class="pill">Σύνδεση…</p>
+    <div style="display:flex;gap:8px;margin:10px 0"><button class="ghost" id="cblur">Κρύψε τα μυστικά</button></div>
+    <h3 style="margin-top:10px">Ψίθυροι</h3><div class="feed" id="cfeed"><p class="old">Ακόμα τίποτα.</p></div>
+    <h3 style="margin-top:16px">Πού κρύβεται ο καθένας</h3><div id="clist"></div><div id="csel"></div>
+    <p style="color:#5d6d92;font-size:12px;margin-top:30px">${esc(LICENSE)}</p>`;
+  $('#cblur').onclick=()=>{ C.classList.toggle('blur'); $('#cblur').textContent=C.classList.contains('blur')?'Δείξε τα μυστικά':'Κρύψε τα μυστικά'; };
+  let st=null, sel=null, seen=0;
+  const draw=()=>{
+    if(!st) return;
+    const L=$('#clist'); L.innerHTML='';
+    st.civs.forEach((c,i)=>{
+      const d=el('div',{class:'cciv'});
+      d.innerHTML=`<span class="dot" style="background:${c.color}"></span><span class="n">${esc(c.name)}<br><small style="color:var(--muted);font-weight:400">${c.alive?(c.known?'φανερός':'κρυμμένος'):'σβησμένος'} · ${c.T} Τ</small></span><span class="s secret">${st.pos[i]??'—'}</span>`;
+      const b=el('button',{},'Αστέρι'); b.onclick=()=>{ sel=i; drawSel(); }; d.appendChild(b); L.appendChild(d);
+    });
+    const F=$('#cfeed'); if(st.whispers.length){ F.innerHTML=st.whispers.slice().reverse().map((w,k)=>`<p class="secret ${k>0?'old':''}">${esc(w)}</p>`).join(''); if(st.whispers.length>seen && navigator.vibrate) navigator.vibrate(200); seen=st.whispers.length; }
+  };
+  const drawSel=()=>{
+    const B=$('#csel'); if(sel==null){ B.innerHTML=''; return; }
+    const taken=st.pos.map((p,i)=>i!==sel && st.civs[i].alive ? p : null);
+    B.innerHTML=`<p style="font-size:18px">Αστέρι για <b style="color:${st.civs[sel].color}">${esc(st.civs[sel].name)}</b>:</p>`;
+    const g=el('div',{class:'starsel'});
+    for(let k=2;k<=12;k++){ const b=el('button',{},k); b.disabled=taken.includes(k); b.onclick=()=>{ conn.send({type:'setPos',civ:sel,star:k}); sel=null; drawSel(); }; g.appendChild(b); }
+    const x=el('button',{class:'ghost'},'Άκυρο'); x.onclick=()=>{sel=null;drawSel();}; g.appendChild(x);
+    B.appendChild(g); B.scrollIntoView({behavior:'smooth'});
+  };
+  if(typeof Peer==='undefined'){ $('#cst').textContent='Δεν φορτώθηκε η βιβλιοθήκη σύνδεσης (internet;)'; return; }
+  peer=new Peer();
+  peer.on('open',()=>{
+    conn=peer.connect(params.get('universe'),{reliable:true});
+    conn.on('open',()=>{ $('#cst').textContent='Συνδεδεμένη με τον πίνακα'; $('#cst').classList.add('on'); });
+    conn.on('data',d=>{ if(d.type==='state'){ st=d; draw(); if(sel!=null) drawSel(); } });
+    conn.on('close',()=>{ $('#cst').textContent='Η σύνδεση κόπηκε. Ξαναφόρτωσε τη σελίδα.'; $('#cst').classList.remove('on'); });
+  });
+  peer.on('error',e=>{ $('#cst').textContent='Σφάλμα σύνδεσης: '+e.type+'. Παίξτε με post-it.'; });
+}
+
+/* ============================================================
+   Εκκίνηση
+   ============================================================ */
+$('#foot').textContent=LICENSE; $('#licSetup').textContent=LICENSE;
+if(IS_CONSOLE){ initConsole(); }
+else {
+  renderSetupCivs();
+  $('#nCivs').onchange=renderSetupCivs;
+  $('#civInputs').addEventListener('input',()=>sendState());
+  $('#btnStart').onclick=startGame;
+  $('#btnResume').onclick=resumeGame;
+  $('#btnHow').onclick=howTo; $('#btnHow2').onclick=howTo;
+  $('#btnFull').onclick=fullscreen; $('#btnFull2').onclick=fullscreen;
+  $('#btnConsole').onclick=showQR;
+  $('#btnSave').onclick=saveChronicle;
+  $('#btnMenu').onclick=menu;
+  if(!store.get('skd-state')) $('#btnResume').classList.add('hidden');
+}
+</script>
+</body>
+</html>
