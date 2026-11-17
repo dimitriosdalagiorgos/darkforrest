@@ -813,7 +813,10 @@ function saveChronicle(){
 function boardId(){ let id=store.get('skd-id'); if(!id){ id='fw-skd-'+Math.random().toString(36).slice(2,8); store.set('skd-id',id); } return id; }
 const players={};      // νησίδα → σύνδεση tablet
 const pconns=[];       // όλα τα tablet (και όσα δεν διάλεξαν ακόμα νησίδα)
-const mp = () => Object.keys(players).length>0;
+const owners={};      // νησίδα → κωδικός συσκευής που την πήρε (για να την ξαναβρίσκει μετά από αποσύνδεση)
+const live = c => !!(c && c.open && Date.now()-(c._seen||0) < 15000);
+const mp = () => Object.keys(players).some(k=>live(players[k]));
+setInterval(()=>{ let ch=false; for(const k of Object.keys(players)){ if(!live(players[k])){ delete players[k]; ch=true; } } if(ch) refresh(); }, 5000);
 function initPeer(){
   if(peer || typeof Peer==='undefined') return !!peer;
   peer=new Peer(boardId());
@@ -821,7 +824,7 @@ function initPeer(){
   peer.on('connection',c=>{
     const role=(c.metadata&&c.metadata.role)||'universe';
     if(role==='player'){
-      pconns.push(c); c._civ=null;
+      pconns.push(c); c._civ=null; c._seen=Date.now();
       c.on('open',()=>sendPlayers());
       c.on('data',d=>onPlayer(c,d));
       c.on('close',()=>{ const k=pconns.indexOf(c); if(k>=0) pconns.splice(k,1); if(c._civ!=null && players[c._civ]===c) delete players[c._civ]; refresh(); });
@@ -839,11 +842,16 @@ function initPeer(){
 function refresh(){ if(S) renderAll(); else { renderSetupStatus(); sendPlayers(); } }
 function onPlayer(c,d){
   if(!d) return;
+  c._seen=Date.now();
+  if(d.type==='ping') return;
   if(d.type==='claim'){
     const n=S?S.civs.length:+$('#nCivs').value;
-    if(d.civ<0||d.civ>=n || (players[d.civ] && players[d.civ]!==c && players[d.civ].open)) { sendPlayers(); return; }
+    const old=players[d.civ];
+    const sameDevice = d.dev && owners[d.civ]===d.dev;
+    if(d.civ<0||d.civ>=n || (old && old!==c && live(old) && !sameDevice)) { sendPlayers(); return; }
+    if(old && old!==c){ old._civ=null; try{ old.close(); }catch(e){} }
     if(c._civ!=null && players[c._civ]===c) delete players[c._civ];
-    players[d.civ]=c; c._civ=d.civ;
+    players[d.civ]=c; c._civ=d.civ; if(d.dev) owners[d.civ]=d.dev;
     if(!S && d.name){ const ins=document.querySelectorAll('#civInputs input'); if(ins[d.civ]) ins[d.civ].value=String(d.name).slice(0,18); }
     refresh(); return;
   }
@@ -877,7 +885,7 @@ function onPlayer(c,d){
 function tell(i,t){ if(!S) return; if(!S.pw) S.pw=S.civs.map(()=>[]); S.pw[i].push(t); save(); sendPlayers(); }
 function pview(civ){
   const civs=(S?S.civs:setupCivs()).map(c=>({name:c.name,color:c.color,T:c.T||0,alive:c.alive!==false,known:c.known??null,rebirth:!!c.rebirth}));
-  const v={type:'view', me:civ, claimed:Object.keys(players).map(Number), setup:!S, civs};
+  const v={type:'view', me:civ, claimed:Object.keys(players).filter(k=>live(players[k])).map(Number), setup:!S, civs};
   if(!S) return v;
   const e=ev(), f=S.flags;
   Object.assign(v,{
@@ -912,7 +920,7 @@ function showQRP(){ $('#qrbox').classList.add('hidden'); makeQR($('#qrboxP'),$('
 function renderSetupStatus(){
   const b=$('#tabState'); if(!b) return;
   const n=+$('#nCivs').value; const names=setupCivs();
-  b.innerHTML = Array.from({length:n},(_,i)=>`<span class="pill ${players[i]?'on':''}">${esc(names[i].name)}: ${players[i]?'tablet ✓':'χωρίς tablet'}</span>`).join(' ');
+  b.innerHTML = Array.from({length:n},(_,i)=>`<span class="pill ${live(players[i])?'on':''}">${esc(names[i].name)}: ${live(players[i])?'tablet ✓':'χωρίς tablet'}</span>`).join(' ');
 }
 
 /* ============================================================
@@ -952,11 +960,17 @@ function resumeGame(){
   if(S.phase==='roundEnd'){ if(S.round>=S.rounds) endGame(); else startRound(); }
 }
 async function menu(){
-  const v=await modal('Μενού','<p>Τι θέλετε;</p>',[['QR για τα tablet','qr'],['Αλλάξτε έναν κανόνα','rules'],['Τέλος παιχνιδιού τώρα','end'],['Νέο παιχνίδι','new'],['Άκυρο','x']]);
+  const v=await modal('Μενού','<p>Τι θέλετε;</p>',[['QR για τα tablet','qr'],['Ελευθέρωσε ένα tablet','free'],['Αλλάξτε έναν κανόνα','rules'],['Τέλος παιχνιδιού τώρα','end'],['Νέο παιχνίδι','new'],['Άκυρο','x']]);
   if(v==='qr'){
     initPeer(); const url=location.origin+location.pathname+'?join='+boardId();
     const pr=info('Σύνδεση tablet',`<p>Σκανάρετε με το tablet της νησίδας. Αν η σελίδα έκλεισε, το tablet ξαναβρίσκει μόνο του τον πολιτισμό του.</p><div id="mqr" style="background:#fff;padding:10px;border-radius:12px;display:inline-block"></div>`);
     setTimeout(()=>{ try{ new QRCode($('#mqr'),{text:url,width:260,height:260}); }catch(e){} },50); await pr;
+  }
+  if(v==='free'){
+    const ks=Object.keys(players).map(Number);
+    if(!ks.length){ await info('Κανένα tablet','<p>Δεν υπάρχει συνδεδεμένο tablet.</p>'); }
+    else { const w=await modal('Ποιον πολιτισμό ελευθερώνω;','<p>Το tablet του αποσυνδέεται, και ο πολιτισμός μπορεί να επιλεγεί από άλλο tablet. Ό,τι έχει (αστέρι, Τεχνολογία) μένει.</p>', [...ks.map(i=>[esc((S?S.civs:setupCivs())[i].name),i]),['Άκυρο','x']]);
+      if(w!=='x'){ const c=players[w]; delete players[w]; delete owners[w]; if(c){ c._civ=null; try{c.close();}catch(e){} } refresh(); } }
   }
   if(v==='rules') showRules();
   if(v==='end' && S.phase!=='end'){ await endGame(); }
@@ -1014,7 +1028,8 @@ function initPlayer(){
   document.body.classList.add('console');
   ['#setup','#app','#rules','#foot'].forEach(s=>$(s).classList.add('hidden'));
   const P=$('#pl'); P.classList.remove('hidden');
-  let v=null, mode=null, picked=[], pendingClaim=null, hide=false, seen=0;
+  let v=null, mode=null, picked=[], pendingClaim=null, hide=false, seen=0, connecting=false;
+  let dev=store.get('skd-dev'); if(!dev){ dev=Math.random().toString(36).slice(2,10); store.set('skd-dev',dev); }
   const send=m=>{ if(conn&&conn.open) conn.send(m); };
   const btn=(html,cls,fn,dis)=>{ const b=el('button',{class:cls||''},html); if(dis) b.disabled=true; b.onclick=fn; return b; };
   function starGrid(title, n, exclude, onDone){
@@ -1034,8 +1049,9 @@ function initPlayer(){
     const on=!!(conn&&conn.open);
     const top=el('div',{class:'ptop'});
     top.innerHTML=`<span class="pill ${on?'on':''}">${on?'Συνδεδεμένο':'Σύνδεση…'}</span><span style="flex:1"></span>`;
-    top.appendChild(btn(hide?'Δείξε':'Κρύψε','ghost',()=>{hide=!hide;draw();}));
+    top.appendChild(btn(hide?'👁 Δείξε τα μυστικά':'🙈 Κρύψε τα μυστικά','ghost',()=>{hide=!hide;draw();}));
     P.appendChild(top);
+    P.appendChild(el('div',{class:'lbl',style:'font-size:14px;margin:-2px 0 6px'}, hide?'Τα μυστικά σας (αστέρι, ψίθυροι) είναι θολά. Πατήστε «Δείξε» όταν δεν κοιτάζει άλλη νησίδα.':'Αν πλησιάσει άλλη νησίδα, πατήστε «Κρύψε»: θολώνει το αστέρι σας και ό,τι σας ψιθύρισε το Σύμπαν.'));
     P.classList.toggle('blur',hide);
     if(!v){ P.appendChild(el('p',{},'Περιμένουμε τον πίνακα…')); return; }
     // 1. ποια νησίδα;
@@ -1045,10 +1061,10 @@ function initPlayer(){
         const inp=el('input',{maxlength:18}); inp.value=v.civs[pendingClaim].name; inp.style.width='100%';
         w.appendChild(el('p',{},'Δώστε όνομα στον πολιτισμό σας (ή κρατήστε αυτό):')); w.appendChild(inp);
         const r=el('div',{class:'prow'});
-        r.appendChild(btn('Αυτοί είμαστε','primary big',()=>{ send({type:'claim',civ:pendingClaim,name:inp.value.trim()}); pendingClaim=null; }));
+        r.appendChild(btn('Αυτοί είμαστε','primary big',()=>{ send({type:'claim',civ:pendingClaim,name:inp.value.trim(),dev}); pendingClaim=null; }));
         r.appendChild(btn('Πίσω','ghost',()=>{pendingClaim=null;draw();})); w.appendChild(r);
       } else {
-        v.civs.forEach((c,i)=>{ const b=btn(esc(c.name),'big',()=>{ if(v.setup){pendingClaim=i;draw();} else send({type:'claim',civ:i}); }, v.claimed.includes(i)); b.style.background=c.color; b.style.color='#06101f'; w.appendChild(b); });
+        v.civs.forEach((c,i)=>{ const b=btn(esc(c.name),'big',()=>{ if(v.setup){pendingClaim=i;draw();} else send({type:'claim',civ:i,dev}); }, v.claimed.includes(i)); b.style.background=c.color; b.style.color='#06101f'; w.appendChild(b); });
       }
       P.appendChild(w); return;
     }
@@ -1106,16 +1122,23 @@ function initPlayer(){
   draw();
   if(typeof Peer==='undefined'){ P.innerHTML='<p>Δεν φορτώθηκε η βιβλιοθήκη σύνδεσης (internet;).</p>'; return; }
   const key='skd-mine-'+params.get('join');
+  // Σύνδεση με επανασύνδεση: όταν σβήνει η οθόνη ή αλλάζει εφαρμογή, η σύνδεση κόβεται και ξαναστήνεται μόνη της.
   const connect=()=>{
+    if(connecting) return; connecting=true;
+    try{ if(peer) peer.destroy(); }catch(e){}
     peer=new Peer();
     peer.on('open',()=>{
-      conn=peer.connect(params.get('join'),{reliable:true,metadata:{role:'player'}});
-      conn.on('open',()=>{ const mine=store.get(key); if(mine!=null) send({type:'claim',civ:mine}); draw(); });
-      conn.on('data',d=>{ if(d && d.type==='view'){ v=d; if(v.me!=null) store.set(key,v.me); draw(); } });
-      conn.on('close',()=>{ v=null; draw(); setTimeout(()=>{ try{peer.destroy();}catch(e){} connect(); },2000); });
+      const c=peer.connect(params.get('join'),{reliable:true,metadata:{role:'player'}}); conn=c;
+      c.on('open',()=>{ connecting=false; const mine=store.get(key); if(mine!=null) send({type:'claim',civ:mine,dev}); draw(); });
+      c.on('data',d=>{ if(d && d.type==='view'){ v=d; if(v.me!=null) store.set(key,v.me); draw(); } });
+      c.on('close',()=>{ if(conn===c) draw(); });
+      setTimeout(()=>{ if(conn===c && !c.open) connecting=false; },8000);
     });
-    peer.on('error',e=>{ const s=P.querySelector('.pill'); if(s) s.textContent='Σφάλμα σύνδεσης: '+e.type; });
+    peer.on('error',e=>{ connecting=false; const s=P.querySelector('.pill'); if(s) s.textContent='Σφάλμα σύνδεσης: '+e.type; });
   };
+  const check=()=>{ if(!(conn && conn.open)) connect(); };
+  setInterval(()=>{ if(conn && conn.open) send({type:'ping'}); else check(); }, 4000);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') check(); });
   connect();
 }
 
