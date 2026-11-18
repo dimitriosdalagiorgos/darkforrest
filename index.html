@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <title>Σκοτεινό Δάσος</title>
-<meta name="description" content="Παιχνίδι ρόλων για διαδραστικό πίνακα και tablet: πολιτισμοί σε έναν σκοτεινό γαλαξία, όπου κάθε νόμος της φύσης γίνεται όπλο και κάθε λύση φυλακή. Όμιλος Future Worlds.">
+<meta name="description" content="Παιχνίδι ρόλων για διαδραστικό πίνακα και tablet: πολιτισμοί σε έναν σκοτεινό γαλαξία, όπου κάθε νόμος της φύσης γίνεται όπλο και κάθε λύση έχει τίμημα. Όμιλος Future Worlds.">
 <style>
 :root{
   --bg:#050a1a; --panel:#0e1a36; --panel2:#132449; --line:#24386a;
@@ -169,7 +169,7 @@ body.console{overflow:auto;user-select:auto}
 <div id="setup">
   <div class="box">
     <h1>ΣΚΟΤΕΙΝΟ ΔΑΣΟΣ</h1>
-    <div class="sub">Ένας σκοτεινός γαλαξίας. Κάθε νησίδα είναι ένας πολιτισμός με ένα κρυφό δόγμα. Θα μιλήσετε στους άλλους; Θα κρυφτείτε; Θα αλλάξετε τους νόμους της φύσης; Κάθε λύση είναι και μια φυλακή.</div>
+    <div class="sub">Ένας σκοτεινός γαλαξίας. Κάθε νησίδα είναι ένας πολιτισμός με ένα κρυφό δόγμα. Θα μιλήσετε στους άλλους; Θα κρυφτείτε; Θα αλλάξετε τους νόμους της φύσης; Κάθε λύση έχει το τίμημά της.</div>
 
     <div class="line">Πολιτισμοί:
       <select id="nCivs"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select>
@@ -247,7 +247,7 @@ body.console{overflow:auto;user-select:auto}
     <h1>Αλλάξτε έναν νόμο του σύμπαντος</h1><span style="flex:1"></span>
     <button class="ghost" id="rulesBack">Πίσω στον γαλαξία</button>
   </div>
-  <div class="sub">Ο Liu Cixin έκανε τους νόμους της φύσης όπλα. Κάθε νόμος εδώ είναι επιστήμη, εύλογη υπόθεση ή μυθοπλασία. Διαλέξτε έναν, αλλάξτε τον, και ρωτήστε: τι θα γινόταν τότε; Και ποια θα ήταν η φυλακή;</div>
+  <div class="sub">Ο Liu Cixin έκανε τους νόμους της φύσης όπλα. Κάθε νόμος εδώ είναι επιστήμη, εύλογη υπόθεση ή μυθοπλασία. Διαλέξτε έναν, αλλάξτε τον, και ρωτήστε: τι θα γινόταν τότε; Τι θα κερδίζαμε; Τι θα χάναμε;</div>
   <div class="rg" id="rulesGrid"></div>
   <div id="ruleBig"></div>
 </div>
@@ -287,7 +287,7 @@ const SOULS = [
 ];
 const soul = c => SOULS.find(s=>s.id===c.soul);
 
-// ---------- οι νόμοι: δύναμη και φυλακή ----------
+// ---------- οι νόμοι: δύναμη και τίμημα ----------
 const LAWS = [
   {id:'sophon', lvl:3, cat:'M', t:'Σοφόνιο', pick:'civ',
    e:'Μαθαίνετε κρυφά πού κρύβεται ένας πολιτισμός που διαλέγετε.',
@@ -303,7 +303,7 @@ const LAWS = [
    w:'Η αμοιβαία αποτροπή είναι πραγματική ιδέα: στον Ψυχρό Πόλεμο οι δύο υπερδυνάμεις δεν χτύπησαν η μία την άλλη, γιατί η απάντηση θα ήταν καταστροφική. Στο σύμπαν, εύλογη υπόθεση.'},
   {id:'black', lvl:6, cat:'M', t:'Μαύρος τομέας', pick:'none',
    e:'Επιβραδύνετε το φως γύρω από το αστέρι σας. Κανένα χτύπημα δεν σας αγγίζει πια.',
-   p:'Φυλακή για πάντα: δεν θα στείλετε ποτέ ξανά σήμα, δεν θα χτυπήσετε, δεν θα αλλάξετε νόμο. Μόνο σιωπή, μέσα σε έναν σκοτεινό θύλακα. Και όλοι βλέπουν πού είστε.',
+   p:'Για πάντα: δεν θα στείλετε ποτέ ξανά σήμα, δεν θα χτυπήσετε, δεν θα αλλάξετε νόμο. Μόνο σιωπή, μέσα σε έναν σκοτεινό θύλακα. Και όλοι βλέπουν πού είστε.',
    w:'Το φως επιβραδύνεται μέσα σε υλικά (σε πείραμα του 1999, ως 17 μέτρα το δευτερόλεπτο). Στο κενό η ταχύτητά του είναι σταθερή. Να την αλλάξεις γύρω από ένα άστρο είναι μυθοπλασία.'},
   {id:'higgs', lvl:9, cat:'M', t:'Πεδίο Higgs', pick:'star',
    e:'Αλλάζετε το πεδίο Higgs σε ένα αστέρι: η ύλη εκεί χάνει τη μάζα της και διαλύεται. Ούτε ο μαύρος τομέας προστατεύει.',
@@ -453,7 +453,7 @@ function renderLawbox(){
     const l=lawById(S.lastLaw.id), c=S.civs[S.lastLaw.by]; const rev=S.lastLaw.rev;
     box.style.borderColor = rev ? CAT[l.cat].c : 'var(--line)';
     box.innerHTML=`<div class="lbl" style="color:var(--muted)">Οι <b style="color:${c.color}">${esc(c.name)}</b> άλλαξαν έναν νόμο της φύσης</div>
-      <h3>${esc(l.t)}</h3><div class="eff">${esc(l.e)}</div><div class="prison"><b>Η φυλακή:</b> ${esc(l.p)}</div>
+      <h3>${esc(l.t)}</h3><div class="eff">${esc(l.e)}</div><div class="prison"><b>Το τίμημα:</b> ${esc(l.p)}</div>
       ${rev?`<div class="truth"><span class="cat" style="background:${CAT[l.cat].c}">${CAT[l.cat].n}</span> <b>Τι ισχύει;</b> ${esc(l.w)}</div>`
            :`<div class="truth"><b>Επιστήμη, εύλογη υπόθεση ή μυθοπλασία;</b> Συζητήστε. Η απάντηση σε λίγα δευτερόλεπτα…</div>`}
       <div style="margin-top:8px"><button class="ghost" id="ladderBtn" style="min-height:38px;font-size:14px">Η σκάλα των νόμων</button></div>`;
@@ -462,14 +462,14 @@ function renderLawbox(){
   }
   box.style.borderColor='var(--line)';
   box.innerHTML=`<div class="lbl" style="color:var(--muted)">Η σκάλα των νόμων</div><h3>Τεχνολογία → νόμοι της φύσης</h3>
-    <div class="lbl" style="color:var(--muted);font-size:14px;margin-bottom:6px">Στα 3, 6 και 9 Τεχνολογίας ένας πολιτισμός ξεκλειδώνει έναν νόμο. Κάθε νόμος έχει δύναμη και φυλακή.</div>
+    <div class="lbl" style="color:var(--muted);font-size:14px;margin-bottom:6px">Στα 3, 6 και 9 Τεχνολογίας ένας πολιτισμός ξεκλειδώνει έναν νόμο. Κάθε νόμος έχει δύναμη και τίμημα.</div>
     ${TIERS.map(t=>`<div class="lad"><b class="lv">${t}</b><span>${LAWS.filter(l=>l.lvl===t).map(l=>`<b>${esc(l.t)}</b>`).join(' ή ')}</span></div>`).join('')}`;
 }
 function renderAct(){
   const a=$('#act'); a.innerHTML='';
   if(S.phase==='end'){
     const b1=el('button',{class:'primary big'},'Αλλάξτε έναν νόμο →'); b1.onclick=showRules;
-    a.appendChild(el('div',{style:'flex:1;display:flex;align-items:center;font-size:22px;color:var(--muted)'},'Τέλος. Ο γαλαξίας σωπαίνει. Κάθε λύση ήταν και μια φυλακή;')); a.appendChild(b1); return;
+    a.appendChild(el('div',{style:'flex:1;display:flex;align-items:center;font-size:22px;color:var(--muted)'},'Τέλος. Ο γαλαξίας σωπαίνει. Ποιο τίμημα πληρώσατε;')); a.appendChild(b1); return;
   }
   if(S.phase!=='turns' || S.civs[cur()]==null) return;
   const i=cur(), c=S.civs[i];
@@ -631,7 +631,7 @@ async function endGame(){
   log(`Ο γαλαξίας σωπαίνει. Πρώτοι οι ${S.civs[res[0].i].name} (${soul(S.civs[res[0].i]).n}) με ${res[0].tot}.`);
   renderAll();
   await info('Ο γαλαξίας σωπαίνει', `<p>${res.map((r,k)=>`${k+1}. <b style="color:${S.civs[r.i].color}">${esc(S.civs[r.i].name)}</b> · ${esc(soul(S.civs[r.i]).n)}: ${r.tot}`).join('<br>')}</p>
-    <p style="color:var(--muted)">Ποιο δόγμα ανταμείβει αυτό το σύμπαν; Ποιος νόμος έγινε φυλακή; Κι αν άλλαζε ένας νόμος;</p>`);
+    <p style="color:var(--muted)">Ποιο δόγμα ανταμείβει αυτό το σύμπαν; Ποιο τίμημα πλήρωσε; Κι αν άλλαζε ένας νόμος;</p>`);
 }
 
 /* ---------- κινήσεις ----------
@@ -691,7 +691,7 @@ async function actLaw(i,d){
   const c=S.civs[i]; const avail=lawsFor(c);
   let lid=d.law;
   if(!lid || !avail.find(l=>l.id===lid)){
-    lid=await modal('Ποιον νόμο αλλάζετε;',`<p style="color:var(--muted)">Κάθε νόμος έχει δύναμη και φυλακή.</p>`+avail.map(l=>`<p><b>${esc(l.t)}</b> (επίπεδο ${l.lvl}): ${esc(l.e)} <span style="color:var(--danger)">Φυλακή: ${esc(l.p)}</span></p>`).join(''),
+    lid=await modal('Ποιον νόμο αλλάζετε;',`<p style="color:var(--muted)">Κάθε νόμος έχει δύναμη και τίμημα.</p>`+avail.map(l=>`<p><b>${esc(l.t)}</b> (επίπεδο ${l.lvl}): ${esc(l.e)} <span style="color:var(--danger)">Τίμημα: ${esc(l.p)}</span></p>`).join(''),
       [...avail.map(l=>[esc(l.t),l.id]),['Άκυρο','x']]);
     if(lid==='x') return false;
   }
@@ -772,7 +772,7 @@ function showRules(){
     d.onclick=()=>{ $('#ruleBig').innerHTML=`<div class="big" style="--k:${CAT[r.cat].c}">
         <div class="t1">Στον κόσμο μας ισχύει: <b>${esc(r.r)}</b> <span class="cat" style="background:${CAT[r.cat].c}">${CAT[r.cat].n}</span></div>
         <div class="t2">Τι θα γινόταν αν ${esc(r.q)}</div>
-        <div class="t3">Και ποια θα ήταν η φυλακή; Τώρα εσείς: ο καθένας γράφει σε post-it το δικό του «Τι θα γινόταν αν…;» και σημειώνει τι είναι επιστήμη (Ε), εύλογη υπόθεση (Υ), μυθοπλασία (Μ).</div></div>`;
+        <div class="t3">Τι θα κερδίζαμε; Τι θα χάναμε; Τώρα εσείς: ο καθένας γράφει στο Padlet το δικό του «Τι θα γινόταν αν…;» και σημειώνει τι είναι επιστήμη (Ε), εύλογη υπόθεση (Υ), μυθοπλασία (Μ).</div></div>`;
       $('#ruleBig').scrollIntoView({behavior:'smooth'}); };
     g.appendChild(d);
   });
@@ -785,7 +785,7 @@ function howTo(){
   • <b>Σιωπή:</b> +1 Τεχνολογία. Κανείς δεν σας βλέπει.<br>
   • <b>Σήμα:</b> +1 Τεχνολογία και φανερώνεστε. Αν στείλει σήμα κι άλλος στον ίδιο γύρο, γίνεται <b>επαφή</b>: +3 ο καθένας, και μαθαίνετε ο ένας πού είναι ο άλλος.<br>
   • <b>Χτύπημα:</b> κοστίζει ${STRIKE_COST} Τεχνολογία. Ό,τι ζει στο αστέρι σβήνει. Ζάρι: με 1-3 το ίχνος σας φανερώνει.<br>
-  • <b>Νόμος της φύσης:</b> στα 3, 6 και 9 Τεχνολογίας ξεκλειδώνετε έναν νόμο. Κάθε νόμος είναι δύναμη, αλλά και φυλακή.</p>
+  • <b>Νόμος της φύσης:</b> στα 3, 6 και 9 Τεχνολογίας ξεκλειδώνετε έναν νόμο. Κάθε νόμος είναι δύναμη, αλλά έχει και τίμημα.</p>
   <p><b>Όποιος σβήνει</b> ξαναγεννιέται στη σειρά του, σε νέο αστέρι, με 0. <b>Στο τέλος</b> μετρά η Τεχνολογία συν τους πόντους του κρυφού δόγματος.</p>`);
 }
 function saveChronicle(){
@@ -1036,8 +1036,8 @@ function initPlayer(){
       const ex=(v.ruins||[]).concat(v.pos!=null?[v.pos]:[]);
       if(mode==='strike'){ P.appendChild(starGrid('Ποιο αστέρι χτυπάτε;', ex, k=>{ mode=null; send({type:'act',a:'strike',stars:[k]}); })); P.appendChild(cancel()); return; }
       if(mode==='law' && !lawSel){
-        const w=el('div',{class:'pbox'}); w.innerHTML='<h2>Ποιον νόμο αλλάζετε;</h2><p class="lbl">Κάθε νόμος είναι δύναμη, αλλά και φυλακή.</p>';
-        (v.laws||[]).forEach(l=>w.appendChild(btn(`<b>${esc(l.t)}</b> <span class="lbl">(επίπεδο ${l.lvl})</span><div class="e">${esc(l.e)}</div><div class="p">Φυλακή: ${esc(l.p)}</div>`,'law',()=>{
+        const w=el('div',{class:'pbox'}); w.innerHTML='<h2>Ποιον νόμο αλλάζετε;</h2><p class="lbl">Κάθε νόμος είναι δύναμη, αλλά έχει και τίμημα.</p>';
+        (v.laws||[]).forEach(l=>w.appendChild(btn(`<b>${esc(l.t)}</b> <span class="lbl">(επίπεδο ${l.lvl})</span><div class="e">${esc(l.e)}</div><div class="p">Τίμημα: ${esc(l.p)}</div>`,'law',()=>{
           if(l.pick==='none'){ mode=null; send({type:'act',a:'law',law:l.id}); } else { lawSel=l; draw(); } })));
         P.appendChild(w); P.appendChild(cancel()); return;
       }
@@ -1056,7 +1056,7 @@ function initPlayer(){
       w.appendChild(g); P.appendChild(w); return;
     }
     mode=null; lawSel=null;
-    if(v.lastLaw){ const l=v.lastLaw; P.appendChild(el('div',{class:'pbox',style:'border-color:var(--fic)'},`<div class="lbl">Οι ${esc(l.by)} άλλαξαν έναν νόμο</div><h3>${esc(l.t)}</h3><p>${esc(l.e)}</p><p style="color:var(--danger)">Φυλακή: ${esc(l.p)}</p>`)); }
+    if(v.lastLaw){ const l=v.lastLaw; P.appendChild(el('div',{class:'pbox',style:'border-color:var(--fic)'},`<div class="lbl">Οι ${esc(l.by)} άλλαξαν έναν νόμο</div><h3>${esc(l.t)}</h3><p>${esc(l.e)}</p><p style="color:var(--danger)">Τίμημα: ${esc(l.p)}</p>`)); }
     const t=v.turn!=null?v.civs[v.turn]:null;
     P.appendChild(el('div',{class:'pbox'},`<h3>${t?`Σειρά: <span style="color:${t.color}">${esc(t.name)}</span>`:'Κοιτάξτε τον πίνακα'}</h3><p class="lbl">Γύρος ${v.round} από ${v.rounds}. Συζητήστε την επόμενη κίνησή σας.</p>`));
   }
