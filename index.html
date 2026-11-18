@@ -179,8 +179,12 @@ body.console{overflow:auto;user-select:auto}
     <div class="grid" id="civInputs"></div>
 
     <div class="card" style="border:2px solid var(--sci)">
-      <b style="font-size:20px">Βήμα 1 · Τα tablet των νησίδων</b>
-      <p style="margin:.5em 0 0">Πατήστε το κουμπί και κάθε νησίδα σκανάρει τον κωδικό με <b>το δικό της tablet</b>. Στο tablet διαλέγει ποιος πολιτισμός είναι και του δίνει όνομα. Από εκεί κρύβεται, μαθαίνει το κρυφό δόγμα της και παίζει.</p>
+      <b style="font-size:20px">Βήμα 1 · Οι νησίδες συνδέονται (tablet ή υπολογιστής)</b>
+      <p style="margin:.5em 0 0">Κάθε νησίδα ανοίγει τον σύνδεσμο των παικτών στο <b>δικό της tablet ή υπολογιστή</b>, διαλέγει ποιος πολιτισμός είναι και του δίνει όνομα. Από εκεί κρύβεται, μαθαίνει το κρυφό δόγμα της και παίζει.</p>
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:17px">
+        Κωδικός αίθουσας: <input id="roomIn" maxlength="20" style="width:150px"> <button id="btnRoom" class="ghost">Σταθερός σύνδεσμος</button>
+      </div>
+      <div id="linkP" style="margin-top:10px;font-size:17px"></div>
       <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button id="btnTablets" class="primary">Δείξε το QR για τα tablet</button><span id="tabState"></span>
       </div>
@@ -792,7 +796,11 @@ function saveChronicle(){
 /* ============================================================
    ΔΙΚΤΥΟ (πίνακας)
    ============================================================ */
-function boardId(){ let id=store.get('skd-id'); if(!id){ id='fw-skd-'+Math.random().toString(36).slice(2,8); store.set('skd-id',id); } return id; }
+const cleanCode = c => String(c||'').trim().toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,20);
+const ROOM = cleanCode(params.get('room'));
+const peerIdFor = code => { code=String(code||'').trim().toLowerCase(); return (code.startsWith('fw-skd-')||code.startsWith('darkforrest-')) ? code : 'darkforrest-'+cleanCode(code); };
+const joinUrl = () => location.origin+location.pathname+'?join='+(ROOM||boardId());
+function boardId(){ if(ROOM) return 'darkforrest-'+ROOM; let id=store.get('skd-id'); if(!id){ id='fw-skd-'+Math.random().toString(36).slice(2,8); store.set('skd-id',id); } return id; }
 const players={}, pconns=[], owners={};
 const live = c => !!(c && c.open && Date.now()-(c._seen||0) < 15000);
 const mp = () => Object.keys(players).some(k=>live(players[k]));
@@ -801,7 +809,13 @@ setInterval(()=>{ let ch=false; for(const k of Object.keys(players)){ if(!live(p
 function initPeer(){
   if(peer || typeof Peer==='undefined') return !!peer;
   peer=new Peer(boardId());
-  peer.on('error',err=>{ if(err.type==='unavailable-id'){ store.set('skd-id',null); peer.destroy(); peer=null; initPeer(); } else console.warn(err); });
+  peer.on('error',err=>{
+    if(err.type==='unavailable-id'){
+      if(ROOM){ // ο σταθερός κωδικός είναι ακόμα πιασμένος (π.χ. ανανέωση πριν λίγο): ξαναδοκιμάζουμε
+        const t=$('#tabState'); if(t) t.textContent=`Ο κωδικός «${ROOM}» είναι ακόμα πιασμένος (άλλη καρτέλα ή ανανέωση πριν λίγο). Νέα προσπάθεια σε 5″…`;
+        try{peer.destroy();}catch(e){} peer=null; setTimeout(()=>{ initPeer(); refresh(); },5000);
+      } else { store.set('skd-id',null); peer.destroy(); peer=null; initPeer(); }
+    } else console.warn(err); });
   peer.on('connection',c=>{
     const role=(c.metadata&&c.metadata.role)||'universe';
     if(role==='player'){
@@ -875,7 +889,15 @@ function makeQR(box, txt, url, msg){
   txt.innerHTML=msg+`<br><small style="word-break:break-all">${esc(url)}</small>`;
 }
 function showQR(){ $('#qrboxP').classList.add('hidden'); makeQR($('#qrbox'),$('#qrtext'),location.origin+location.pathname+'?universe='+boardId(),'Σκάναρε με το κινητό του Σύμπαντος. Δεν δείχνεις την κονσόλα στην τάξη.'); }
-function showQRP(){ $('#qrbox').classList.add('hidden'); makeQR($('#qrboxP'),$('#qrtextP'),location.origin+location.pathname+'?join='+boardId(),'Κάθε νησίδα σκανάρει με το tablet της και διαλέγει ποιος πολιτισμός είναι.'); renderSetupStatus(); }
+function showQRP(){ $('#qrbox').classList.add('hidden'); makeQR($('#qrboxP'),$('#qrtextP'),joinUrl(),'Κάθε νησίδα σκανάρει με το tablet της και διαλέγει ποιος πολιτισμός είναι.'); renderSetupStatus(); }
+function renderLink(){
+  const b=$('#linkP'); if(!b) return;
+  if(location.protocol==='file:'){ b.innerHTML='<span style="color:var(--muted)">Οι σύνδεσμοι δουλεύουν μόνο από τη διεύθυνση GitHub Pages, όχι από αρχείο.</span>'; return; }
+  if(!ROOM){ b.innerHTML='<span style="color:var(--muted)">Για τον υπολογιστή: γράψτε έναν σύντομο κωδικό (π.χ. <b>fw</b>) και πατήστε «Σταθερός σύνδεσμος». Έτσι ο σύνδεσμος των παικτών μένει ίδιος.</span>'; return; }
+  b.innerHTML=`Σύνδεσμος για τους παίκτες (Veyon → άνοιγμα ιστοσελίδας):<br><b style="font-size:22px;user-select:all;word-break:break-all">${esc(joinUrl())}</b> <button class="ghost" id="btnCopy" style="min-height:38px;font-size:14px">Αντιγραφή</button>
+    <div style="color:var(--muted);font-size:15px;margin-top:4px">Αυτή η σελίδα (ο πίνακας): <span style="user-select:all">${esc(location.origin+location.pathname+'?room='+ROOM)}</span></div>`;
+  $('#btnCopy').onclick=()=>{ try{ navigator.clipboard.writeText(joinUrl()); $('#btnCopy').textContent='Αντιγράφηκε ✓'; }catch(e){} };
+}
 function renderSetupStatus(){ const b=$('#tabState'); if(!b) return; const names=setupCivs();
   b.innerHTML=names.map((c,i)=>`<span class="pill ${live(players[i])?'on':''}">${esc(c.name)}: ${live(players[i])?'tablet ✓':'χωρίς tablet'}</span>`).join(' '); }
 
@@ -915,9 +937,9 @@ function resumeGame(){
   if(S.phase==='positions'){ startRound(); }
 }
 async function menu(){
-  const v=await modal('Μενού','<p>Τι θέλετε;</p>',[['QR για τα tablet','qr'],['Ελευθέρωσε ένα tablet','free'],['Δόγμα νησίδας χωρίς tablet','soul'],['Αλλάξτε έναν νόμο','rules'],['Τέλος παιχνιδιού τώρα','end'],['Νέο παιχνίδι','new'],['Άκυρο','x']]);
-  if(v==='qr'){ initPeer(); const url=location.origin+location.pathname+'?join='+boardId();
-    const pr=info('Σύνδεση tablet','<p>Σκανάρετε με το tablet της νησίδας. Αν η σελίδα έκλεισε, το tablet ξαναβρίσκει μόνο του τον πολιτισμό του.</p><div id="mqr" class="qrimg" style="display:inline-block"></div>');
+  const v=await modal('Μενού','<p>Τι θέλετε;</p>',[['Σύνδεσμος / QR για τις νησίδες','qr'],['Ελευθέρωσε ένα tablet','free'],['Δόγμα νησίδας χωρίς tablet','soul'],['Αλλάξτε έναν νόμο','rules'],['Τέλος παιχνιδιού τώρα','end'],['Νέο παιχνίδι','new'],['Άκυρο','x']]);
+  if(v==='qr'){ initPeer(); const url=joinUrl();
+    const pr=info('Σύνδεση νησίδων',`<p>Σκανάρετε με το tablet ή ανοίξτε στον υπολογιστή:</p><p style="font-size:24px"><b style="user-select:all">${esc(joinUrl())}</b></p><p style="color:var(--muted)">Αν η σελίδα έκλεισε, ξαναβρίσκει μόνη της τον πολιτισμό της.</p><div id="mqr" class="qrimg" style="display:inline-block"></div>`);
     setTimeout(()=>{ try{ new QRCode($('#mqr'),{text:url,width:260,height:260}); }catch(e){} },50); await pr; }
   if(v==='free'){ const ks=Object.keys(players).map(Number);
     if(!ks.length) await info('Κανένα tablet','<p>Δεν υπάρχει συνδεδεμένο tablet.</p>');
@@ -1046,7 +1068,7 @@ function initPlayer(){
     try{ if(peer) peer.destroy(); }catch(e){}
     peer=new Peer();
     peer.on('open',()=>{
-      const c=peer.connect(params.get('join'),{reliable:true,metadata:{role:'player'}}); conn=c;
+      const c=peer.connect(peerIdFor(params.get('join')),{reliable:true,metadata:{role:'player'}}); conn=c;
       c.on('open',()=>{ connecting=false; const mine=store.get(key); if(mine!=null) send({type:'claim',civ:mine,dev}); draw(); });
       c.on('data',d=>{ if(d && d.type==='view'){ v=d; if(v.me!=null) store.set(key,v.me); draw(); } });
       c.on('close',()=>{ if(conn===c) draw(); });
@@ -1074,6 +1096,9 @@ else {
   $('#btnHow').onclick=howTo; $('#btnHow2').onclick=howTo;
   $('#btnFull').onclick=fullscreen; $('#btnFull2').onclick=fullscreen;
   $('#btnConsole').onclick=showQR; $('#btnTablets').onclick=showQRP;
+  $('#roomIn').value = ROOM || 'fw';
+  $('#btnRoom').onclick=()=>{ const c=cleanCode($('#roomIn').value)||'fw'; location.href=location.pathname+'?room='+c; };
+  renderLink(); if(ROOM) initPeer();
   $('#btnSave').onclick=saveChronicle; $('#btnMenu').onclick=menu;
   const saved=store.get('skd3-state');
   if(!saved) $('#btnResume').classList.add('hidden');
